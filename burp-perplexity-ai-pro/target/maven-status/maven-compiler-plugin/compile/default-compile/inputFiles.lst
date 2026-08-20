@@ -1,0 +1,12 @@
+/app/burp-perplexity-ai-pro/src/main/java/burp/Extension.java
+/app/burp-perplexity-ai-pro/src/main/java/burp/api/ApiClient.java
+/app/burp-perplexity-ai-pro/src/main/java/burp/inspector/AiInspectorTab.java
+/app/burp-perplexity-ai-pro/src/main/java/burp/inspector/AiInspectorTabProvider.java
+/app/burp-perplexity-ai-pro/src/main/java/burp/menu/ContextMenuProvider.java
+/app/burp-perplexity-ai-pro/src/main/java/burp/model/ChatMessage.java
+/app/burp-perplexity-ai-pro/src/main/java/burp/model/ChatSession.java
+/app/burp-perplexity-ai-pro/src/main/java/burp/storage/ExtensionConfig.java
+/app/burp-perplexity-ai-pro/src/main/java/burp/storage/StorageManager.java
+/app/burp-perplexity-ai-pro/src/main/java/burp/ui/MainTabPanel.java
+/app/burp-perplexity-ai-pro/src/main/java/burp/ui/MarkdownUtil.java
+/app/burp-perplexity-ai-pro/src/main/java/burp/ui/SettingsPanel.java
