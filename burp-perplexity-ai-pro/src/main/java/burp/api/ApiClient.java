@@ -19,7 +19,6 @@ import java.util.List;
 
 public class ApiClient {
     public static final String NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1";
-    public static final String OPENCODE_ZEN_BASE_URL = "https://api.opencodezen.com/v1";
 
     public static final String PROVIDER_NVIDIA = "NVIDIA";
     public static final String PROVIDER_OPENCODE = "OpenCode Zen";
@@ -65,7 +64,11 @@ public class ApiClient {
         }
 
         if (config.getOpenCodeZenApiKey() != null && !config.getOpenCodeZenApiKey().trim().isEmpty()) {
-            List<String> list = fetchModelsFromEndpoint(OPENCODE_ZEN_BASE_URL + "/models", config.getOpenCodeZenApiKey());
+            String baseUrl = config.getOpenCodeZenBaseUrl().replaceAll("/+$", "");
+            if (!baseUrl.endsWith("/models")) {
+                baseUrl += "/models";
+            }
+            List<String> list = fetchModelsFromEndpoint(baseUrl, config.getOpenCodeZenApiKey());
             for (String m : list) {
                 models.add(new ModelEntry(PROVIDER_OPENCODE, m));
             }
@@ -151,7 +154,8 @@ public class ApiClient {
                 String provider = modelEntry != null ? modelEntry.getProvider() : PROVIDER_NVIDIA;
 
                 if (PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
-                    endpointUrl = OPENCODE_ZEN_BASE_URL + "/chat/completions";
+                    String baseUrl = config.getOpenCodeZenBaseUrl().replaceAll("/+$", "");
+                    endpointUrl = baseUrl.endsWith("/chat/completions") ? baseUrl : baseUrl + "/chat/completions";
                     apiKey = config.getOpenCodeZenApiKey();
                 } else if (PROVIDER_CUSTOM.equalsIgnoreCase(provider)) {
                     String baseUrl = config.getCustomApiUrl().replaceAll("/+$", "");
@@ -235,7 +239,13 @@ public class ApiClient {
                 callback.onComplete();
 
             } catch (Throwable t) {
-                callback.onError(t);
+                String errorMsg = t.getMessage();
+                if (t instanceof java.net.UnknownHostException) {
+                    errorMsg = "Unable to resolve API host: " + t.getMessage() + ". Please check your API Base URL in Settings.";
+                } else if (t instanceof java.net.ConnectException) {
+                    errorMsg = "Connection refused to API endpoint: " + t.getMessage() + ". Please verify host/port availability.";
+                }
+                callback.onError(new RuntimeException(errorMsg, t));
             }
         }).start();
     }

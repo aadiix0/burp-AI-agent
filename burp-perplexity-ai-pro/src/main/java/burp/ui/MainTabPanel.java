@@ -97,7 +97,7 @@ public class MainTabPanel extends JPanel {
         sidebar.setBackground(DARK_BG);
         sidebar.setBorder(new EmptyBorder(8, 8, 8, 8));
 
-        JPanel topBtnBar = new JPanel(new GridLayout(1, 2, 6, 6));
+        JPanel topBtnBar = new JPanel(new GridLayout(1, 3, 4, 4));
         topBtnBar.setBackground(DARK_BG);
 
         JButton newSessionBtn = new JButton("+ New");
@@ -107,6 +107,12 @@ public class MainTabPanel extends JPanel {
         newSessionBtn.setFocusPainted(false);
         newSessionBtn.addActionListener(e -> createNewSession());
 
+        JButton renameSessionBtn = new JButton("✏️ Rename");
+        renameSessionBtn.setBackground(DARK_PANEL);
+        renameSessionBtn.setForeground(DARK_TEXT);
+        renameSessionBtn.setFocusPainted(false);
+        renameSessionBtn.addActionListener(e -> renameSelectedSession());
+
         JButton deleteSessionBtn = new JButton("🗑 Delete");
         deleteSessionBtn.setBackground(DARK_PANEL);
         deleteSessionBtn.setForeground(DARK_TEXT);
@@ -114,6 +120,7 @@ public class MainTabPanel extends JPanel {
         deleteSessionBtn.addActionListener(e -> deleteSelectedSession());
 
         topBtnBar.add(newSessionBtn);
+        topBtnBar.add(renameSessionBtn);
         topBtnBar.add(deleteSessionBtn);
 
         searchSessionsField = new JTextField();
@@ -422,6 +429,19 @@ public class MainTabPanel extends JPanel {
         renderActiveSessionChat();
     }
 
+    private void renameSelectedSession() {
+        ChatSession selected = sessionList.getSelectedValue();
+        if (selected != null) {
+            String newTitle = JOptionPane.showInputDialog(this, "Enter new title for session:", selected.getTitle());
+            if (newTitle != null && !newTitle.trim().isEmpty()) {
+                selected.setTitle(newTitle.trim());
+                storageManager.saveSession(selected);
+                sessionList.repaint();
+                renderActiveSessionChat();
+            }
+        }
+    }
+
     private void deleteSelectedSession() {
         ChatSession selected = sessionList.getSelectedValue();
         if (selected != null) {
@@ -515,6 +535,7 @@ public class MainTabPanel extends JPanel {
             modelComboBox.setSelectedItem(toSelect);
         }
         updateFavoriteStarButtonState();
+        checkApiConnectivity();
     }
 
     private void updateFavoriteStarButtonState() {
@@ -524,6 +545,68 @@ public class MainTabPanel extends JPanel {
             boolean isFav = config.getFavoriteModels().contains(selected.getRawModelId());
             toggleFavoriteBtn.setText(isFav ? "★ Favorited" : "☆ Star");
         }
+        checkApiConnectivity();
+    }
+
+    private void checkApiConnectivity() {
+        ModelEntry selected = (ModelEntry) modelComboBox.getSelectedItem();
+        ExtensionConfig config = storageManager.getConfig();
+
+        if (selected == null) {
+            statusApiConnectionLabel.setText("🟡 Select Model");
+            statusApiConnectionLabel.setForeground(Color.YELLOW);
+            return;
+        }
+
+        String provider = selected.getProvider();
+        String apiKey;
+        String endpointUrl;
+
+        if (ApiClient.PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
+            apiKey = config.getOpenCodeZenApiKey();
+            endpointUrl = config.getOpenCodeZenBaseUrl();
+        } else if (ApiClient.PROVIDER_CUSTOM.equalsIgnoreCase(provider)) {
+            apiKey = config.getCustomApiKey();
+            endpointUrl = config.getCustomApiUrl();
+        } else {
+            apiKey = config.getNvidiaApiKey();
+            endpointUrl = ApiClient.NVIDIA_BASE_URL;
+        }
+
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            statusApiConnectionLabel.setText("🟡 " + provider + " Key Missing");
+            statusApiConnectionLabel.setForeground(Color.ORANGE);
+            return;
+        }
+
+        statusApiConnectionLabel.setText("⏳ Checking Connection...");
+        statusApiConnectionLabel.setForeground(DARK_TEXT);
+
+        new Thread(() -> {
+            boolean reachable = false;
+            try {
+                java.net.URL url = new java.net.URL(endpointUrl.replaceAll("/+$", "") + "/models");
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Authorization", "Bearer " + apiKey.trim());
+                conn.setConnectTimeout(3000);
+                conn.setReadTimeout(3000);
+                int code = conn.getResponseCode();
+                reachable = (code == 200 || code == 401 || code == 403);
+            } catch (Exception ignored) {
+            }
+
+            final boolean isOk = reachable;
+            SwingUtilities.invokeLater(() -> {
+                if (isOk) {
+                    statusApiConnectionLabel.setText("🟢 API Connected");
+                    statusApiConnectionLabel.setForeground(new Color(52, 211, 153));
+                } else {
+                    statusApiConnectionLabel.setText("🔴 Host Unreachable / Invalid Key");
+                    statusApiConnectionLabel.setForeground(new Color(248, 113, 113));
+                }
+            });
+        }).start();
     }
 
     private void toggleCurrentModelFavorite() {
