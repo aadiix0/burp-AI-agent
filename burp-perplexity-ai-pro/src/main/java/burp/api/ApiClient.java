@@ -248,7 +248,7 @@ public class ApiClient {
 
     private String normalizeEndpointUrl(String rawBaseUrl, String suffix) {
         if (rawBaseUrl == null || rawBaseUrl.trim().isEmpty()) {
-            return "https://opencodezen.com/v1" + suffix;
+            return "https://opencodezen.com/api/v1" + suffix;
         }
         String clean = rawBaseUrl.trim().replaceAll("/+$", "");
         if (clean.endsWith(suffix)) {
@@ -259,9 +259,6 @@ public class ApiClient {
         }
         if (suffix.equals("/models") && clean.endsWith("/chat/completions")) {
             clean = clean.substring(0, clean.length() - "/chat/completions".length());
-        }
-        if (!clean.endsWith("/v1") && !clean.contains("/v1/")) {
-            clean += "/v1";
         }
         return clean + suffix;
     }

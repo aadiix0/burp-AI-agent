@@ -107,7 +107,8 @@ public class MainTabPanel extends JPanel {
         newSessionBtn.setFocusPainted(false);
         newSessionBtn.addActionListener(e -> createNewSession());
 
-        JButton renameSessionBtn = new JButton("✏️ Rename");
+        JButton renameSessionBtn = new JButton("✏️");
+        renameSessionBtn.setToolTipText("Rename active session");
         renameSessionBtn.setBackground(DARK_PANEL);
         renameSessionBtn.setForeground(DARK_TEXT);
         renameSessionBtn.setFocusPainted(false);
@@ -585,14 +586,18 @@ public class MainTabPanel extends JPanel {
         new Thread(() -> {
             boolean reachable = false;
             try {
-                java.net.URL url = new java.net.URL(endpointUrl.replaceAll("/+$", "") + "/models");
+                String targetUrl = endpointUrl.replaceAll("/+$", "");
+                if (!targetUrl.endsWith("/models") && !targetUrl.endsWith("/chat/completions")) {
+                    targetUrl += "/models";
+                }
+                java.net.URL url = new java.net.URL(targetUrl);
                 java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Authorization", "Bearer " + apiKey.trim());
-                conn.setConnectTimeout(3000);
-                conn.setReadTimeout(3000);
+                conn.setConnectTimeout(4000);
+                conn.setReadTimeout(4000);
                 int code = conn.getResponseCode();
-                reachable = (code == 200 || code == 401 || code == 403);
+                reachable = (code == 200 || code == 400 || code == 401 || code == 403 || code == 405);
             } catch (Exception ignored) {
             }
 
@@ -602,8 +607,8 @@ public class MainTabPanel extends JPanel {
                     statusApiConnectionLabel.setText("🟢 API Connected");
                     statusApiConnectionLabel.setForeground(new Color(52, 211, 153));
                 } else {
-                    statusApiConnectionLabel.setText("🔴 Host Unreachable / Invalid Key");
-                    statusApiConnectionLabel.setForeground(new Color(248, 113, 113));
+                    statusApiConnectionLabel.setText("🟡 API Key Set (" + provider + ")");
+                    statusApiConnectionLabel.setForeground(new Color(251, 146, 60));
                 }
             });
         }).start();
@@ -728,11 +733,15 @@ public class MainTabPanel extends JPanel {
         StringBuilder sb = new StringBuilder();
         sb.append("# ").append(activeSession.getTitle()).append("\n\n");
 
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+
         for (ChatMessage msg : activeSession.getMessages()) {
+            String timeStr = timeFormat.format(new Date(msg.getTimestamp()));
+
             if (msg.getRole() == ChatMessage.Role.USER) {
-                sb.append("<div class='user-bubble'><h3>👤 You</h3>");
+                sb.append("<div class='user-bubble'><span class='msg-header user-header'>👤 You <span class='timestamp'>").append(timeStr).append("</span></span>");
             } else if (msg.getRole() == ChatMessage.Role.ASSISTANT) {
-                sb.append("<div class='ai-bubble'><h3>🤖 AI Assistant</h3>");
+                sb.append("<div class='ai-bubble'><span class='msg-header ai-header'>🤖 AI Assistant <span class='timestamp'>").append(timeStr).append("</span></span>");
             }
 
             if (msg.getContent() != null && !msg.getContent().isEmpty()) {

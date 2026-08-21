@@ -7,7 +7,7 @@ import java.util.*;
 public class ExtensionConfig {
     private String nvidiaApiKey = "";
     private String openCodeZenApiKey = "";
-    private String openCodeZenBaseUrl = "https://opencodezen.com/v1";
+    private String openCodeZenBaseUrl = "https://opencodezen.com/api/v1";
     private String customApiUrl = "";
     private String customApiKey = "";
     private String selectedModel = "nvidia/llama-3.1-nemotron-70b-instruct";
@@ -70,7 +70,7 @@ public class ExtensionConfig {
     }
 
     public String getOpenCodeZenBaseUrl() {
-        return (openCodeZenBaseUrl == null || openCodeZenBaseUrl.trim().isEmpty()) ? "https://opencodezen.com/v1" : openCodeZenBaseUrl;
+        return (openCodeZenBaseUrl == null || openCodeZenBaseUrl.trim().isEmpty()) ? "https://opencodezen.com/api/v1" : openCodeZenBaseUrl;
     }
 
     public void setOpenCodeZenBaseUrl(String openCodeZenBaseUrl) {
