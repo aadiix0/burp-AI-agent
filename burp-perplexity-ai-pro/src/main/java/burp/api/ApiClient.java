@@ -64,10 +64,7 @@ public class ApiClient {
         }
 
         if (config.getOpenCodeZenApiKey() != null && !config.getOpenCodeZenApiKey().trim().isEmpty()) {
-            String baseUrl = config.getOpenCodeZenBaseUrl().replaceAll("/+$", "");
-            if (!baseUrl.endsWith("/models")) {
-                baseUrl += "/models";
-            }
+            String baseUrl = normalizeEndpointUrl(config.getOpenCodeZenBaseUrl(), "/models");
             List<String> list = fetchModelsFromEndpoint(baseUrl, config.getOpenCodeZenApiKey());
             for (String m : list) {
                 models.add(new ModelEntry(PROVIDER_OPENCODE, m));
@@ -154,12 +151,10 @@ public class ApiClient {
                 String provider = modelEntry != null ? modelEntry.getProvider() : PROVIDER_NVIDIA;
 
                 if (PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
-                    String baseUrl = config.getOpenCodeZenBaseUrl().replaceAll("/+$", "");
-                    endpointUrl = baseUrl.endsWith("/chat/completions") ? baseUrl : baseUrl + "/chat/completions";
+                    endpointUrl = normalizeEndpointUrl(config.getOpenCodeZenBaseUrl(), "/chat/completions");
                     apiKey = config.getOpenCodeZenApiKey();
                 } else if (PROVIDER_CUSTOM.equalsIgnoreCase(provider)) {
-                    String baseUrl = config.getCustomApiUrl().replaceAll("/+$", "");
-                    endpointUrl = baseUrl.endsWith("/chat/completions") ? baseUrl : baseUrl + "/chat/completions";
+                    endpointUrl = normalizeEndpointUrl(config.getCustomApiUrl(), "/chat/completions");
                     apiKey = config.getCustomApiKey();
                 } else {
                     endpointUrl = NVIDIA_BASE_URL + "/chat/completions";
@@ -209,7 +204,8 @@ public class ApiClient {
                 int statusCode = conn.getResponseCode();
                 if (statusCode != 200) {
                     InputStream errIs = conn.getErrorStream();
-                    String errText = errIs != null ? new String(errIs.readAllBytes(), StandardCharsets.UTF_8) : "HTTP " + statusCode;
+                    String rawErr = errIs != null ? new String(errIs.readAllBytes(), StandardCharsets.UTF_8) : "HTTP " + statusCode;
+                    String errText = cleanErrorMessage(rawErr, statusCode, endpointUrl);
                     callback.onError(new RuntimeException("API error (" + statusCode + "): " + errText));
                     return;
                 }
@@ -248,6 +244,37 @@ public class ApiClient {
                 callback.onError(new RuntimeException(errorMsg, t));
             }
         }).start();
+    }
+
+    private String normalizeEndpointUrl(String rawBaseUrl, String suffix) {
+        if (rawBaseUrl == null || rawBaseUrl.trim().isEmpty()) {
+            return "https://opencodezen.com/v1" + suffix;
+        }
+        String clean = rawBaseUrl.trim().replaceAll("/+$", "");
+        if (clean.endsWith(suffix)) {
+            return clean;
+        }
+        if (suffix.equals("/chat/completions") && clean.endsWith("/models")) {
+            clean = clean.substring(0, clean.length() - "/models".length());
+        }
+        if (suffix.equals("/models") && clean.endsWith("/chat/completions")) {
+            clean = clean.substring(0, clean.length() - "/chat/completions".length());
+        }
+        if (!clean.endsWith("/v1") && !clean.contains("/v1/")) {
+            clean += "/v1";
+        }
+        return clean + suffix;
+    }
+
+    private String cleanErrorMessage(String rawResponse, int statusCode, String endpoint) {
+        if (rawResponse == null) return "HTTP " + statusCode + " at " + endpoint;
+        if (rawResponse.contains("<html") || rawResponse.contains("<!DOCTYPE") || rawResponse.contains("<title>")) {
+            return "Endpoint return HTML 404 / error page at `" + endpoint + "`. Please check API Base URL in Settings.";
+        }
+        if (rawResponse.length() > 250) {
+            return rawResponse.substring(0, 250) + "...";
+        }
+        return rawResponse;
     }
 
     private String buildFormattedMessageContent(ChatMessage msg) {

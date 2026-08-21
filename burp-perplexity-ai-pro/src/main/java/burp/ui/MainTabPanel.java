@@ -97,7 +97,7 @@ public class MainTabPanel extends JPanel {
         sidebar.setBackground(DARK_BG);
         sidebar.setBorder(new EmptyBorder(8, 8, 8, 8));
 
-        JPanel topBtnBar = new JPanel(new GridLayout(1, 3, 4, 4));
+        JPanel topBtnBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         topBtnBar.setBackground(DARK_BG);
 
         JButton newSessionBtn = new JButton("+ New");
@@ -155,11 +155,11 @@ public class MainTabPanel extends JPanel {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                label.setBorder(new EmptyBorder(8, 10, 8, 10));
+                label.setBorder(new EmptyBorder(6, 8, 6, 8));
                 label.setOpaque(true);
                 if (value instanceof ChatSession) {
                     ChatSession session = (ChatSession) value;
-                    label.setText("🟠 " + session.getTitle());
+                    label.setText("💬 " + session.getTitle());
                 }
                 if (isSelected) {
                     label.setBackground(DARK_PANEL);
