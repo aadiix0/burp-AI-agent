@@ -22,6 +22,7 @@ public class ApiClient {
 
     public static final String PROVIDER_NVIDIA = "NVIDIA";
     public static final String PROVIDER_OPENCODE = "OpenCode Zen";
+    public static final String PROVIDER_DEEPSEEK_WEB = "DeepSeek Web";
     public static final String PROVIDER_CUSTOM = "Custom";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -82,6 +83,9 @@ public class ApiClient {
             }
         }
 
+        models.add(new ModelEntry(PROVIDER_DEEPSEEK_WEB, "deepseek-chat"));
+        models.add(new ModelEntry(PROVIDER_DEEPSEEK_WEB, "deepseek-reasoner"));
+
         // Ensure default presets are present if none were dynamically fetched or if keys are missing
         boolean hasNvidia = models.stream().anyMatch(m -> PROVIDER_NVIDIA.equalsIgnoreCase(m.getProvider()));
         boolean hasOpenCode = models.stream().anyMatch(m -> PROVIDER_OPENCODE.equalsIgnoreCase(m.getProvider()));
@@ -141,6 +145,9 @@ public class ApiClient {
             ModelEntry modelEntry,
             List<ChatMessage> history,
             String newPrompt,
+            boolean thinkingEnabled,
+            boolean searchEnabled,
+            boolean expertMode,
             StreamCallback callback) {
 
         new Thread(() -> {
@@ -150,7 +157,10 @@ public class ApiClient {
                 String modelId = modelEntry != null ? modelEntry.getRawModelId() : config.getSelectedModel();
                 String provider = modelEntry != null ? modelEntry.getProvider() : PROVIDER_NVIDIA;
 
-                if (PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
+                if (PROVIDER_DEEPSEEK_WEB.equalsIgnoreCase(provider)) {
+                    streamDeepSeekWebCompletion(config, modelId, history, thinkingEnabled, searchEnabled, expertMode, callback);
+                    return;
+                } else if (PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
                     endpointUrl = normalizeEndpointUrl(config.getOpenCodeZenBaseUrl(), "/chat/completions");
                     apiKey = config.getOpenCodeZenApiKey();
                 } else if (PROVIDER_CUSTOM.equalsIgnoreCase(provider)) {
@@ -244,6 +254,105 @@ public class ApiClient {
                 callback.onError(new RuntimeException(errorMsg, t));
             }
         }).start();
+    }
+
+    private void streamDeepSeekWebCompletion(
+            ExtensionConfig config,
+            String modelId,
+            List<ChatMessage> history,
+            boolean thinkingEnabled,
+            boolean searchEnabled,
+            boolean expertMode,
+            StreamCallback callback) {
+
+        String token = config.getDeepSeekWebUserToken();
+        if (token == null || token.trim().isEmpty()) {
+            callback.onError(new IllegalArgumentException("DeepSeek Web User Token / Cookie is not set in Settings."));
+            return;
+        }
+
+        try {
+            String endpointUrl = "https://chat.deepseek.com/api/v6/chat/completion";
+            URL url = new URL(endpointUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+
+            if (token.contains("=")) {
+                conn.setRequestProperty("Cookie", token.trim());
+            } else {
+                conn.setRequestProperty("Authorization", "Bearer " + token.trim());
+            }
+
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "text/event-stream");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            conn.setDoOutput(true);
+
+            ObjectNode body = objectMapper.createObjectNode();
+            body.put("model", modelId != null && !modelId.isEmpty() ? modelId : "deepseek-chat");
+            body.put("thinking_enabled", thinkingEnabled);
+            body.put("search_enabled", expertMode ? false : searchEnabled);
+            body.put("mode", expertMode ? "expert" : "instant");
+
+            ArrayNode messagesNode = objectMapper.createArrayNode();
+            if (config.getSystemPrompt() != null && !config.getSystemPrompt().trim().isEmpty()) {
+                ObjectNode sysMsg = objectMapper.createObjectNode();
+                sysMsg.put("role", "system");
+                sysMsg.put("content", config.getSystemPrompt());
+                messagesNode.add(sysMsg);
+            }
+
+            for (ChatMessage msg : history) {
+                ObjectNode mNode = objectMapper.createObjectNode();
+                mNode.put("role", msg.getRole().name().toLowerCase());
+                mNode.put("content", buildFormattedMessageContent(msg));
+                messagesNode.add(mNode);
+            }
+            body.set("messages", messagesNode);
+
+            byte[] input = objectMapper.writeValueAsBytes(body);
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(input, 0, input.length);
+            }
+
+            int statusCode = conn.getResponseCode();
+            if (statusCode != 200) {
+                InputStream errIs = conn.getErrorStream();
+                String rawErr = errIs != null ? new String(errIs.readAllBytes(), StandardCharsets.UTF_8) : "HTTP " + statusCode;
+                String errText = cleanErrorMessage(rawErr, statusCode, endpointUrl);
+                callback.onError(new RuntimeException("DeepSeek Web API error (" + statusCode + "): " + errText));
+                return;
+            }
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("data: ")) {
+                        String data = line.substring(6).trim();
+                        if ("[DONE]".equalsIgnoreCase(data)) {
+                            break;
+                        }
+                        try {
+                            JsonNode root = objectMapper.readTree(data);
+                            if (root.has("choices") && root.get("choices").isArray() && root.get("choices").size() > 0) {
+                                JsonNode choice = root.get("choices").get(0);
+                                if (choice.has("delta") && choice.get("delta").has("content")) {
+                                    String chunk = choice.get("delta").get("content").asText();
+                                    callback.onChunk(chunk);
+                                }
+                            } else if (root.has("content")) {
+                                callback.onChunk(root.get("content").asText());
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            }
+            callback.onComplete();
+
+        } catch (Throwable t) {
+            callback.onError(new RuntimeException("DeepSeek Web request failed: " + t.getMessage(), t));
+        }
     }
 
     public static String normalizeEndpointUrl(String rawBaseUrl, String suffix) {

@@ -17,6 +17,7 @@ public class SettingsPanel extends JPanel {
     private JTextField nvidiaKeyField;
     private JTextField openCodeZenKeyField;
     private JTextField openCodeZenUrlField;
+    private JTextField deepSeekWebTokenField;
     private JTextField customUrlField;
     private JTextField customKeyField;
     private JCheckBox enableInspectorCheckBox;
@@ -48,14 +49,16 @@ public class SettingsPanel extends JPanel {
         nvidiaKeyField = new JTextField(30);
         openCodeZenKeyField = new JTextField(30);
         openCodeZenUrlField = new JTextField(30);
+        deepSeekWebTokenField = new JTextField(30);
         customUrlField = new JTextField(30);
         customKeyField = new JTextField(30);
 
         addGridRow(keysPanel, gbc, 0, "NVIDIA API Key:", nvidiaKeyField);
         addGridRow(keysPanel, gbc, 1, "OpenCode Zen API Key:", openCodeZenKeyField);
         addGridRow(keysPanel, gbc, 2, "OpenCode Zen Base URL:", openCodeZenUrlField);
-        addGridRow(keysPanel, gbc, 3, "Custom API Base URL:", customUrlField);
-        addGridRow(keysPanel, gbc, 4, "Custom API Key:", customKeyField);
+        addGridRow(keysPanel, gbc, 3, "DeepSeek Web User Token / Cookie:", deepSeekWebTokenField);
+        addGridRow(keysPanel, gbc, 4, "Custom API Base URL:", customUrlField);
+        addGridRow(keysPanel, gbc, 5, "Custom API Key:", customKeyField);
 
         formPanel.add(keysPanel);
         formPanel.add(Box.createVerticalStrut(15));
@@ -116,6 +119,7 @@ public class SettingsPanel extends JPanel {
         nvidiaKeyField.setText(config.getNvidiaApiKey());
         openCodeZenKeyField.setText(config.getOpenCodeZenApiKey());
         openCodeZenUrlField.setText(config.getOpenCodeZenBaseUrl());
+        deepSeekWebTokenField.setText(config.getDeepSeekWebUserToken());
         customUrlField.setText(config.getCustomApiUrl());
         customKeyField.setText(config.getCustomApiKey());
         enableInspectorCheckBox.setSelected(config.isEnableInspectorTab());
@@ -127,6 +131,7 @@ public class SettingsPanel extends JPanel {
         config.setNvidiaApiKey(nvidiaKeyField.getText().trim());
         config.setOpenCodeZenApiKey(openCodeZenKeyField.getText().trim());
         config.setOpenCodeZenBaseUrl(openCodeZenUrlField.getText().trim());
+        config.setDeepSeekWebUserToken(deepSeekWebTokenField.getText().trim());
         config.setCustomApiUrl(customUrlField.getText().trim());
         config.setCustomApiKey(customKeyField.getText().trim());
         config.setEnableInspectorTab(enableInspectorCheckBox.isSelected());
