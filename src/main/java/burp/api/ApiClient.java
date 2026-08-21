@@ -83,8 +83,7 @@ public class ApiClient {
             }
         }
 
-        models.add(new ModelEntry(PROVIDER_DEEPSEEK_WEB, "deepseek-chat"));
-        models.add(new ModelEntry(PROVIDER_DEEPSEEK_WEB, "deepseek-reasoner"));
+        models.add(new ModelEntry(PROVIDER_DEEPSEEK_WEB, "deepseek-webui"));
 
         // Ensure default presets are present if none were dynamically fetched or if keys are missing
         boolean hasNvidia = models.stream().anyMatch(m -> PROVIDER_NVIDIA.equalsIgnoreCase(m.getProvider()));
@@ -158,7 +157,7 @@ public class ApiClient {
                 String provider = modelEntry != null ? modelEntry.getProvider() : PROVIDER_NVIDIA;
 
                 if (PROVIDER_DEEPSEEK_WEB.equalsIgnoreCase(provider)) {
-                    streamDeepSeekWebCompletion(config, modelId, history, thinkingEnabled, searchEnabled, expertMode, callback);
+                    streamDeepSeekWebCompletion(config, history, thinkingEnabled, searchEnabled, expertMode, callback);
                     return;
                 } else if (PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
                     endpointUrl = normalizeEndpointUrl(config.getOpenCodeZenBaseUrl(), "/chat/completions");
@@ -258,7 +257,6 @@ public class ApiClient {
 
     private void streamDeepSeekWebCompletion(
             ExtensionConfig config,
-            String modelId,
             List<ChatMessage> history,
             boolean thinkingEnabled,
             boolean searchEnabled,
@@ -289,7 +287,7 @@ public class ApiClient {
             conn.setDoOutput(true);
 
             ObjectNode body = objectMapper.createObjectNode();
-            body.put("model", modelId != null && !modelId.isEmpty() ? modelId : "deepseek-chat");
+            body.put("model", "deepseek-chat");
             body.put("thinking_enabled", thinkingEnabled);
             body.put("search_enabled", expertMode ? false : searchEnabled);
             body.put("mode", expertMode ? "expert" : "instant");

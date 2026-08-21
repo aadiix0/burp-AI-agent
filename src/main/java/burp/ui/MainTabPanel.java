@@ -342,8 +342,11 @@ public class MainTabPanel extends JPanel {
         modelComboBox = new JComboBox<>();
         modelComboBox.setBackground(DARK_BG);
         modelComboBox.setForeground(DARK_TEXT);
-        modelComboBox.setMaximumSize(new Dimension(300, 24));
-        modelComboBox.addActionListener(e -> updateFavoriteStarButtonState());
+        modelComboBox.setPreferredSize(new Dimension(280, 26));
+        modelComboBox.addActionListener(e -> {
+            updateFavoriteStarButtonState();
+            updateDeepSeekWebControlsState();
+        });
 
         toggleFavoriteBtn = new JButton("☆ Star");
         toggleFavoriteBtn.setBackground(DARK_BG);
@@ -361,7 +364,7 @@ public class MainTabPanel extends JPanel {
         lightningLabel.setForeground(ORANGE_ACCENT);
         lightningLabel.setFont(lightningLabel.getFont().deriveFont(Font.BOLD, 12f));
 
-        JPanel modelControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JPanel modelControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
         modelControls.setBackground(DARK_PANEL);
         modelControls.add(lightningLabel);
         modelControls.add(modelComboBox);
@@ -412,12 +415,12 @@ public class MainTabPanel extends JPanel {
         statusApiConnectionLabel.setForeground(new Color(52, 211, 153));
         statusApiConnectionLabel.setFont(statusApiConnectionLabel.getFont().deriveFont(Font.BOLD, 11f));
 
-        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 2));
         rightControls.setBackground(DARK_PANEL);
         rightControls.add(statusTokensLabel);
         rightControls.add(statusApiConnectionLabel);
 
-        statusBar.add(modelControls, BorderLayout.WEST);
+        statusBar.add(modelControls, BorderLayout.CENTER);
         statusBar.add(rightControls, BorderLayout.EAST);
 
         return statusBar;
@@ -581,6 +584,10 @@ public class MainTabPanel extends JPanel {
     }
 
     private void updateDeepSeekWebControlsState() {
+        if (deepSeekModeToggleBtn == null || deepThinkToggleBtn == null || webSearchToggleBtn == null) {
+            return;
+        }
+
         ModelEntry selected = (ModelEntry) modelComboBox.getSelectedItem();
         boolean isDeepSeekWeb = selected != null && ApiClient.PROVIDER_DEEPSEEK_WEB.equalsIgnoreCase(selected.getProvider());
 
@@ -601,6 +608,9 @@ public class MainTabPanel extends JPanel {
                 webSearchToggleBtn.setToolTipText("Enable web search (Instant mode only)");
             }
         }
+
+        revalidate();
+        repaint();
     }
 
     private void updateFavoriteStarButtonState() {
@@ -767,7 +777,7 @@ public class MainTabPanel extends JPanel {
         boolean search = webSearchToggleBtn.isSelected();
         boolean expert = deepSeekModeToggleBtn.isSelected();
 
-        apiClient.streamChatCompletion(config, selectedModel, activeSession.getMessages().subList(0, activeSession.getMessages().size() - 1), userPrompt, thinking, search, expert, new ApiClient.StreamCallback() {
+        apiClient.streamChatCompletion(config, selectedModel, activeSession.getMessages(), userPrompt, thinking, search, expert, new ApiClient.StreamCallback() {
             @Override
             public void onChunk(String chunk) {
                 fullResponseBuffer.append(chunk);
