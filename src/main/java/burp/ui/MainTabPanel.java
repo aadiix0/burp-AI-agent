@@ -585,7 +585,8 @@ public class MainTabPanel extends JPanel {
         new Thread(() -> {
             boolean reachable = false;
             try {
-                java.net.URL url = new java.net.URL(endpointUrl.replaceAll("/+$", "") + "/models");
+                String checkUrl = ApiClient.normalizeEndpointUrl(endpointUrl, "/models");
+                java.net.URL url = new java.net.URL(checkUrl);
                 java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Authorization", "Bearer " + apiKey.trim());

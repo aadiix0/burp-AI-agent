@@ -97,12 +97,12 @@ public class ApiClient {
         }
 
         if (!hasOpenCode) {
-            models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode-zen/mimo-v2.5"));
-            models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode/deepseek-v4-flash"));
-            models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode-zen/coder-70b"));
-            models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode/claude-3-5-sonnet"));
-            models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode/gpt-4o"));
-            models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode/deepseek-r1"));
+            models.add(new ModelEntry(PROVIDER_OPENCODE, "deepseek-v4-flash-free"));
+            models.add(new ModelEntry(PROVIDER_OPENCODE, "deepseek-v4-flash"));
+            models.add(new ModelEntry(PROVIDER_OPENCODE, "mimo-v2.5-free"));
+            models.add(new ModelEntry(PROVIDER_OPENCODE, "deepseek-v4-pro"));
+            models.add(new ModelEntry(PROVIDER_OPENCODE, "gpt-5.6-sol"));
+            models.add(new ModelEntry(PROVIDER_OPENCODE, "claude-sonnet-4-5"));
         }
 
         return models;
@@ -246,9 +246,9 @@ public class ApiClient {
         }).start();
     }
 
-    private String normalizeEndpointUrl(String rawBaseUrl, String suffix) {
-        if (rawBaseUrl == null || rawBaseUrl.trim().isEmpty()) {
-            return "https://opencodezen.com/v1" + suffix;
+    public static String normalizeEndpointUrl(String rawBaseUrl, String suffix) {
+        if (rawBaseUrl == null || rawBaseUrl.trim().isEmpty() || rawBaseUrl.contains("opencodezen.com")) {
+            rawBaseUrl = "https://opencode.ai/zen/v1";
         }
         String clean = rawBaseUrl.trim().replaceAll("/+$", "");
         if (clean.endsWith(suffix)) {
@@ -260,7 +260,7 @@ public class ApiClient {
         if (suffix.equals("/models") && clean.endsWith("/chat/completions")) {
             clean = clean.substring(0, clean.length() - "/chat/completions".length());
         }
-        if (!clean.endsWith("/v1") && !clean.contains("/v1/")) {
+        if (!clean.toLowerCase().endsWith("/v1") && !clean.toLowerCase().contains("/v1/")) {
             clean += "/v1";
         }
         return clean + suffix;
