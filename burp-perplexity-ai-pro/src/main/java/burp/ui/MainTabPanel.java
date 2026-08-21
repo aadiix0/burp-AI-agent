@@ -195,29 +195,12 @@ public class MainTabPanel extends JPanel {
         controlBar.setBackground(DARK_PANEL);
         controlBar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(DARK_BORDER),
-                new EmptyBorder(8, 10, 8, 10)
+                new EmptyBorder(6, 10, 6, 10)
         ));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(4, 4, 4, 4);
+        gbc.insets = new Insets(2, 4, 2, 4);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        modelComboBox = new JComboBox<>();
-        modelComboBox.setBackground(DARK_BG);
-        modelComboBox.setForeground(DARK_TEXT);
-        modelComboBox.addActionListener(e -> updateFavoriteStarButtonState());
-
-        toggleFavoriteBtn = new JButton("☆ Star");
-        toggleFavoriteBtn.setBackground(DARK_BG);
-        toggleFavoriteBtn.setForeground(ORANGE_ACCENT);
-        toggleFavoriteBtn.setFocusPainted(false);
-        toggleFavoriteBtn.addActionListener(e -> toggleCurrentModelFavorite());
-
-        favoriteFilterBtn = new JToggleButton("⭐ Favorites Only");
-        favoriteFilterBtn.setBackground(DARK_BG);
-        favoriteFilterBtn.setForeground(DARK_TEXT);
-        favoriteFilterBtn.setFocusPainted(false);
-        favoriteFilterBtn.addActionListener(e -> renderModelComboBox());
 
         promptCategoryComboBox = new JComboBox<>();
         promptCategoryComboBox.setBackground(DARK_BG);
@@ -229,31 +212,33 @@ public class MainTabPanel extends JPanel {
         vulnClassComboBox.setForeground(DARK_TEXT);
         vulnClassComboBox.addActionListener(e -> onVulnClassSelected());
 
-        JLabel modelLabel = new JLabel("Model:"); modelLabel.setForeground(DARK_TEXT);
+        JButton exportSessionBtn = new JButton("📥 Export");
+        exportSessionBtn.setBackground(DARK_BG);
+        exportSessionBtn.setForeground(DARK_TEXT);
+        exportSessionBtn.setFocusPainted(false);
+        exportSessionBtn.addActionListener(e -> exportCurrentSession());
+
+        JButton clearBtn = new JButton("🗑 Clear");
+        clearBtn.setBackground(DARK_BG);
+        clearBtn.setForeground(DARK_TEXT);
+        clearBtn.setFocusPainted(false);
+        clearBtn.addActionListener(e -> clearCurrentChatSession());
+
         JLabel promptLabel = new JLabel("Prompt:"); promptLabel.setForeground(DARK_TEXT);
         JLabel vulnLabel = new JLabel("Vuln:"); vulnLabel.setForeground(DARK_TEXT);
 
-        // Row 0: Model, Star Toggle, Favorites Filter
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0; controlBar.add(modelLabel, gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; controlBar.add(modelComboBox, gbc);
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0; controlBar.add(promptLabel, gbc);
+        gbc.gridx = 1; gbc.weightx = 0.4; controlBar.add(promptCategoryComboBox, gbc);
 
-        JPanel starAndFilterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
-        starAndFilterPanel.setBackground(DARK_PANEL);
-        starAndFilterPanel.add(toggleFavoriteBtn);
-        starAndFilterPanel.add(favoriteFilterBtn);
+        gbc.gridx = 2; gbc.weightx = 0.0; controlBar.add(vulnLabel, gbc);
+        gbc.gridx = 3; gbc.weightx = 0.4; controlBar.add(vulnClassComboBox, gbc);
 
-        gbc.gridx = 2; gbc.weightx = 0.0; controlBar.add(starAndFilterPanel, gbc);
+        JPanel topActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        topActions.setBackground(DARK_PANEL);
+        topActions.add(exportSessionBtn);
+        topActions.add(clearBtn);
 
-        // Row 1: Prompt & Vuln
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0; controlBar.add(promptLabel, gbc);
-        gbc.gridx = 1; gbc.weightx = 0.5; controlBar.add(promptCategoryComboBox, gbc);
-
-        JPanel vulnPanel = new JPanel(new BorderLayout(4, 0));
-        vulnPanel.setBackground(DARK_PANEL);
-        vulnPanel.add(vulnLabel, BorderLayout.WEST);
-        vulnPanel.add(vulnClassComboBox, BorderLayout.CENTER);
-
-        gbc.gridx = 2; gbc.weightx = 0.5; controlBar.add(vulnPanel, gbc);
+        gbc.gridx = 4; gbc.weightx = 0.2; controlBar.add(topActions, gbc);
 
         // Attached Traffic Card Banner
         attachedTrafficBanner = new JPanel(new BorderLayout(8, 8));
@@ -305,8 +290,15 @@ public class MainTabPanel extends JPanel {
         JScrollPane promptScroll = new JScrollPane(promptInputArea);
         promptScroll.setBorder(BorderFactory.createLineBorder(DARK_BORDER));
 
-        JPanel actionBtnsBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        JPanel actionBtnsBar = new JPanel(new GridLayout(2, 1, 4, 4));
         actionBtnsBar.setBackground(DARK_BG);
+
+        sendButton = new JButton("➤ Send");
+        sendButton.setBackground(ORANGE_ACCENT);
+        sendButton.setForeground(Color.WHITE);
+        sendButton.setFont(sendButton.getFont().deriveFont(Font.BOLD));
+        sendButton.setFocusPainted(false);
+        sendButton.addActionListener(e -> sendCurrentPrompt());
 
         JButton copyAnalysisBtn = new JButton("📋 Copy Analysis");
         copyAnalysisBtn.setBackground(DARK_PANEL);
@@ -314,25 +306,11 @@ public class MainTabPanel extends JPanel {
         copyAnalysisBtn.setFocusPainted(false);
         copyAnalysisBtn.addActionListener(e -> copyCurrentAnalysis());
 
-        JButton exportSessionBtn = new JButton("📥 Export");
-        exportSessionBtn.setBackground(DARK_PANEL);
-        exportSessionBtn.setForeground(DARK_TEXT);
-        exportSessionBtn.setFocusPainted(false);
-        exportSessionBtn.addActionListener(e -> exportCurrentSession());
-
-        sendButton = new JButton("🚀 Send");
-        sendButton.setBackground(ORANGE_ACCENT);
-        sendButton.setForeground(Color.WHITE);
-        sendButton.setFont(sendButton.getFont().deriveFont(Font.BOLD));
-        sendButton.setFocusPainted(false);
-        sendButton.addActionListener(e -> sendCurrentPrompt());
-
-        actionBtnsBar.add(exportSessionBtn);
-        actionBtnsBar.add(copyAnalysisBtn);
         actionBtnsBar.add(sendButton);
+        actionBtnsBar.add(copyAnalysisBtn);
 
         bottomPanel.add(promptScroll, BorderLayout.CENTER);
-        bottomPanel.add(actionBtnsBar, BorderLayout.SOUTH);
+        bottomPanel.add(actionBtnsBar, BorderLayout.EAST);
 
         mainArea.add(headerContainer, BorderLayout.NORTH);
         mainArea.add(chatScroll, BorderLayout.CENTER);
@@ -342,15 +320,43 @@ public class MainTabPanel extends JPanel {
     }
 
     private JPanel createBottomStatusBar() {
-        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 4));
+        JPanel statusBar = new JPanel(new BorderLayout(10, 0));
         statusBar.setBackground(DARK_PANEL);
-        statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, DARK_BORDER));
+        statusBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, DARK_BORDER),
+                new EmptyBorder(4, 10, 4, 10)
+        ));
 
-        statusModelLabel = new JLabel("⚡ Select Model");
-        statusModelLabel.setForeground(DARK_TEXT);
-        statusModelLabel.setFont(statusModelLabel.getFont().deriveFont(11f));
+        modelComboBox = new JComboBox<>();
+        modelComboBox.setBackground(DARK_BG);
+        modelComboBox.setForeground(DARK_TEXT);
+        modelComboBox.setMaximumSize(new Dimension(300, 24));
+        modelComboBox.addActionListener(e -> updateFavoriteStarButtonState());
 
-        statusTokensLabel = new JLabel("🧮 Tokens Ready");
+        toggleFavoriteBtn = new JButton("☆ Star");
+        toggleFavoriteBtn.setBackground(DARK_BG);
+        toggleFavoriteBtn.setForeground(ORANGE_ACCENT);
+        toggleFavoriteBtn.setFocusPainted(false);
+        toggleFavoriteBtn.addActionListener(e -> toggleCurrentModelFavorite());
+
+        favoriteFilterBtn = new JToggleButton("⭐ Favorites");
+        favoriteFilterBtn.setBackground(DARK_BG);
+        favoriteFilterBtn.setForeground(DARK_TEXT);
+        favoriteFilterBtn.setFocusPainted(false);
+        favoriteFilterBtn.addActionListener(e -> renderModelComboBox());
+
+        JLabel lightningLabel = new JLabel("⚡ Model:");
+        lightningLabel.setForeground(ORANGE_ACCENT);
+        lightningLabel.setFont(lightningLabel.getFont().deriveFont(Font.BOLD, 12f));
+
+        JPanel modelControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        modelControls.setBackground(DARK_PANEL);
+        modelControls.add(lightningLabel);
+        modelControls.add(modelComboBox);
+        modelControls.add(toggleFavoriteBtn);
+        modelControls.add(favoriteFilterBtn);
+
+        statusTokensLabel = new JLabel("💾 ~2.4k tokens");
         statusTokensLabel.setForeground(DARK_TEXT);
         statusTokensLabel.setFont(statusTokensLabel.getFont().deriveFont(11f));
 
@@ -358,11 +364,26 @@ public class MainTabPanel extends JPanel {
         statusApiConnectionLabel.setForeground(new Color(52, 211, 153));
         statusApiConnectionLabel.setFont(statusApiConnectionLabel.getFont().deriveFont(Font.BOLD, 11f));
 
-        statusBar.add(statusModelLabel);
-        statusBar.add(statusTokensLabel);
-        statusBar.add(statusApiConnectionLabel);
+        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        rightControls.setBackground(DARK_PANEL);
+        rightControls.add(statusTokensLabel);
+        rightControls.add(statusApiConnectionLabel);
+
+        statusBar.add(modelControls, BorderLayout.WEST);
+        statusBar.add(rightControls, BorderLayout.EAST);
 
         return statusBar;
+    }
+
+    private void clearCurrentChatSession() {
+        if (activeSession != null) {
+            int confirm = JOptionPane.showConfirmDialog(this, "Clear all messages in active session?", "Clear Chat", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                activeSession.getMessages().clear();
+                storageManager.saveSession(activeSession);
+                renderActiveSessionChat();
+            }
+        }
     }
 
     private void filterSessions() {
@@ -502,7 +523,6 @@ public class MainTabPanel extends JPanel {
             ExtensionConfig config = storageManager.getConfig();
             boolean isFav = config.getFavoriteModels().contains(selected.getRawModelId());
             toggleFavoriteBtn.setText(isFav ? "★ Favorited" : "☆ Star");
-            statusModelLabel.setText("⚡ " + selected.getDisplayName());
         }
     }
 
@@ -563,7 +583,6 @@ public class MainTabPanel extends JPanel {
         ModelEntry selectedModel = (ModelEntry) modelComboBox.getSelectedItem();
         if (selectedModel != null) {
             config.setSelectedModel(selectedModel.getRawModelId());
-            statusModelLabel.setText("⚡ " + selectedModel.getDisplayName());
             storageManager.saveConfig(config);
         }
 

@@ -87,13 +87,18 @@ public class ApiClient {
         boolean hasOpenCode = models.stream().anyMatch(m -> PROVIDER_OPENCODE.equalsIgnoreCase(m.getProvider()));
 
         if (!hasNvidia) {
-            models.add(new ModelEntry(PROVIDER_NVIDIA, "nvidia/llama-3.1-nemotron-70b-instruct"));
-            models.add(new ModelEntry(PROVIDER_NVIDIA, "meta/llama-3.3-70b-instruct"));
-            models.add(new ModelEntry(PROVIDER_NVIDIA, "deepseek-ai/deepseek-r1"));
             models.add(new ModelEntry(PROVIDER_NVIDIA, "deepseek-ai/deepseek-v4-flash-0731"));
+            models.add(new ModelEntry(PROVIDER_NVIDIA, "deepseek-ai/deepseek-r1"));
+            models.add(new ModelEntry(PROVIDER_NVIDIA, "qwen/qwen2.5-72b-instruct"));
+            models.add(new ModelEntry(PROVIDER_NVIDIA, "qwen/qwen2.5-coder-32b-instruct"));
+            models.add(new ModelEntry(PROVIDER_NVIDIA, "zhipuai/glm-4-9b-chat"));
+            models.add(new ModelEntry(PROVIDER_NVIDIA, "meta/llama-3.3-70b-instruct"));
+            models.add(new ModelEntry(PROVIDER_NVIDIA, "nvidia/llama-3.1-nemotron-70b-instruct"));
         }
 
         if (!hasOpenCode) {
+            models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode-zen/mimo-v2.5"));
+            models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode/deepseek-v4-flash"));
             models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode-zen/coder-70b"));
             models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode/claude-3-5-sonnet"));
             models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode/gpt-4o"));
