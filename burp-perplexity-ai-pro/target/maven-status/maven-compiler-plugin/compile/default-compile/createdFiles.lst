@@ -1,3 +1,4 @@
+burp/api/ApiClient$ModelEntry.class
 burp/model/ChatMessage.class
 burp/ui/MainTabPanel$3.class
 burp/ui/MainTabPanel$2.class
@@ -11,6 +12,7 @@ burp/ui/MainTabPanel.class
 burp/Extension.class
 burp/storage/ExtensionConfig.class
 burp/ui/MarkdownUtil.class
+burp/ui/MainTabPanel$4.class
 burp/inspector/AiInspectorTab.class
 burp/ui/SettingsPanel.class
 burp/storage/StorageManager$1.class

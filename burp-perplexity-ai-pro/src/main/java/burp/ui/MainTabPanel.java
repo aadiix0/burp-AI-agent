@@ -1,6 +1,7 @@
 package burp.ui;
 
 import burp.api.ApiClient;
+import burp.api.ApiClient.ModelEntry;
 import burp.api.montoya.MontoyaApi;
 import burp.model.ChatMessage;
 import burp.model.ChatSession;
@@ -9,6 +10,8 @@ import burp.storage.StorageManager;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.io.File;
@@ -26,8 +29,10 @@ public class MainTabPanel extends JPanel {
 
     private DefaultListModel<ChatSession> sessionListModel;
     private JList<ChatSession> sessionList;
+    private JTextField searchSessionsField;
 
-    private JComboBox<String> modelComboBox;
+    private JComboBox<ModelEntry> modelComboBox;
+    private JButton toggleFavoriteBtn;
     private JToggleButton favoriteFilterBtn;
     private JComboBox<String> promptCategoryComboBox;
     private JComboBox<String> vulnClassComboBox;
@@ -39,11 +44,22 @@ public class MainTabPanel extends JPanel {
     private JPanel attachedTrafficBanner;
     private JLabel attachedTrafficLabel;
 
+    private JLabel statusModelLabel;
+    private JLabel statusTokensLabel;
+    private JLabel statusApiConnectionLabel;
+
     private String pendingHttpRequest;
     private String pendingHttpResponse;
     private String pendingHttpUrl;
 
     private ChatSession activeSession;
+    private List<ModelEntry> cachedFetchedModels = new ArrayList<>();
+
+    private static final Color DARK_BG = new Color(24, 24, 28);
+    private static final Color DARK_PANEL = new Color(31, 31, 35);
+    private static final Color ORANGE_ACCENT = new Color(249, 115, 22);
+    private static final Color DARK_TEXT = new Color(212, 212, 216);
+    private static final Color DARK_BORDER = new Color(39, 39, 42);
 
     public MainTabPanel(MontoyaApi api, StorageManager storageManager) {
         this.api = api;
@@ -53,11 +69,19 @@ public class MainTabPanel extends JPanel {
         setLayout(new BorderLayout());
 
         JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setBackground(DARK_PANEL);
+        tabbedPane.setForeground(DARK_TEXT);
 
         JPanel chatMainPanel = new JPanel(new BorderLayout());
+        chatMainPanel.setBackground(DARK_BG);
+
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, createSessionSidebar(), createChatMainArea());
-        splitPane.setDividerLocation(250);
+        splitPane.setDividerLocation(260);
+        splitPane.setBorder(null);
+        splitPane.setBackground(DARK_BG);
+
         chatMainPanel.add(splitPane, BorderLayout.CENTER);
+        chatMainPanel.add(createBottomStatusBar(), BorderLayout.SOUTH);
 
         tabbedPane.addTab("AI Assistant", chatMainPanel);
         tabbedPane.addTab("Settings & API Keys", new SettingsPanel(api, storageManager, this::refreshModelsAndConfig));
@@ -69,29 +93,75 @@ public class MainTabPanel extends JPanel {
     }
 
     private JPanel createSessionSidebar() {
-        JPanel sidebar = new JPanel(new BorderLayout(5, 5));
-        sidebar.setBorder(new EmptyBorder(5, 5, 5, 5));
+        JPanel sidebar = new JPanel(new BorderLayout(8, 8));
+        sidebar.setBackground(DARK_BG);
+        sidebar.setBorder(new EmptyBorder(8, 8, 8, 8));
 
-        JPanel topBtnBar = new JPanel(new GridLayout(1, 2, 5, 5));
-        JButton newSessionBtn = new JButton("+ New Session");
+        JPanel topBtnBar = new JPanel(new GridLayout(1, 2, 6, 6));
+        topBtnBar.setBackground(DARK_BG);
+
+        JButton newSessionBtn = new JButton("+ New");
+        newSessionBtn.setBackground(ORANGE_ACCENT);
+        newSessionBtn.setForeground(Color.WHITE);
+        newSessionBtn.setFont(newSessionBtn.getFont().deriveFont(Font.BOLD));
+        newSessionBtn.setFocusPainted(false);
         newSessionBtn.addActionListener(e -> createNewSession());
 
-        JButton deleteSessionBtn = new JButton("Delete");
+        JButton deleteSessionBtn = new JButton("🗑 Delete");
+        deleteSessionBtn.setBackground(DARK_PANEL);
+        deleteSessionBtn.setForeground(DARK_TEXT);
+        deleteSessionBtn.setFocusPainted(false);
         deleteSessionBtn.addActionListener(e -> deleteSelectedSession());
 
         topBtnBar.add(newSessionBtn);
         topBtnBar.add(deleteSessionBtn);
 
+        searchSessionsField = new JTextField();
+        searchSessionsField.setBackground(DARK_PANEL);
+        searchSessionsField.setForeground(DARK_TEXT);
+        searchSessionsField.setCaretColor(DARK_TEXT);
+        searchSessionsField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(DARK_BORDER),
+                BorderFactory.createEmptyBorder(6, 8, 6, 8)
+        ));
+        searchSessionsField.setToolTipText("Search sessions...");
+
+        searchSessionsField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { filterSessions(); }
+            @Override public void removeUpdate(DocumentEvent e) { filterSessions(); }
+            @Override public void changedUpdate(DocumentEvent e) { filterSessions(); }
+        });
+
+        JPanel topContainer = new JPanel(new BorderLayout(6, 6));
+        topContainer.setBackground(DARK_BG);
+        topContainer.add(topBtnBar, BorderLayout.NORTH);
+        topContainer.add(searchSessionsField, BorderLayout.SOUTH);
+
         sessionListModel = new DefaultListModel<>();
         sessionList = new JList<>(sessionListModel);
+        sessionList.setBackground(DARK_BG);
+        sessionList.setForeground(DARK_TEXT);
+        sessionList.setSelectionBackground(DARK_PANEL);
+        sessionList.setSelectionForeground(ORANGE_ACCENT);
         sessionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         sessionList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                label.setBorder(new EmptyBorder(8, 10, 8, 10));
+                label.setOpaque(true);
                 if (value instanceof ChatSession) {
                     ChatSession session = (ChatSession) value;
-                    label.setText(session.getTitle());
+                    label.setText("🟠 " + session.getTitle());
+                }
+                if (isSelected) {
+                    label.setBackground(DARK_PANEL);
+                    label.setForeground(ORANGE_ACCENT);
+                    label.setFont(label.getFont().deriveFont(Font.BOLD));
+                } else {
+                    label.setBackground(DARK_BG);
+                    label.setForeground(DARK_TEXT);
+                    label.setFont(label.getFont().deriveFont(Font.PLAIN));
                 }
                 return label;
             }
@@ -107,104 +177,202 @@ public class MainTabPanel extends JPanel {
             }
         });
 
-        sidebar.add(topBtnBar, BorderLayout.NORTH);
-        sidebar.add(new JScrollPane(sessionList), BorderLayout.CENTER);
+        JScrollPane sessionScroll = new JScrollPane(sessionList);
+        sessionScroll.setBorder(BorderFactory.createLineBorder(DARK_BORDER));
+
+        sidebar.add(topContainer, BorderLayout.NORTH);
+        sidebar.add(sessionScroll, BorderLayout.CENTER);
 
         return sidebar;
     }
 
     private JPanel createChatMainArea() {
-        JPanel mainArea = new JPanel(new BorderLayout(5, 5));
-        mainArea.setBorder(new EmptyBorder(5, 5, 5, 5));
+        JPanel mainArea = new JPanel(new BorderLayout(6, 6));
+        mainArea.setBackground(DARK_BG);
+        mainArea.setBorder(new EmptyBorder(8, 8, 8, 8));
 
-        // Top Control Bar (Model dropdown, Favorites toggle, Presets)
         JPanel controlBar = new JPanel(new GridBagLayout());
+        controlBar.setBackground(DARK_PANEL);
+        controlBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(DARK_BORDER),
+                new EmptyBorder(8, 10, 8, 10)
+        ));
+
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(3, 3, 3, 3);
+        gbc.insets = new Insets(4, 4, 4, 4);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         modelComboBox = new JComboBox<>();
-        modelComboBox.setEditable(true);
+        modelComboBox.setBackground(DARK_BG);
+        modelComboBox.setForeground(DARK_TEXT);
+        modelComboBox.addActionListener(e -> updateFavoriteStarButtonState());
 
-        favoriteFilterBtn = new JToggleButton("⭐ Favorites");
-        favoriteFilterBtn.addActionListener(e -> populateModelComboBox());
+        toggleFavoriteBtn = new JButton("☆ Star");
+        toggleFavoriteBtn.setBackground(DARK_BG);
+        toggleFavoriteBtn.setForeground(ORANGE_ACCENT);
+        toggleFavoriteBtn.setFocusPainted(false);
+        toggleFavoriteBtn.addActionListener(e -> toggleCurrentModelFavorite());
+
+        favoriteFilterBtn = new JToggleButton("⭐ Favorites Only");
+        favoriteFilterBtn.setBackground(DARK_BG);
+        favoriteFilterBtn.setForeground(DARK_TEXT);
+        favoriteFilterBtn.setFocusPainted(false);
+        favoriteFilterBtn.addActionListener(e -> renderModelComboBox());
 
         promptCategoryComboBox = new JComboBox<>();
+        promptCategoryComboBox.setBackground(DARK_BG);
+        promptCategoryComboBox.setForeground(DARK_TEXT);
         promptCategoryComboBox.addActionListener(e -> onPromptCategorySelected());
 
         vulnClassComboBox = new JComboBox<>();
+        vulnClassComboBox.setBackground(DARK_BG);
+        vulnClassComboBox.setForeground(DARK_TEXT);
         vulnClassComboBox.addActionListener(e -> onVulnClassSelected());
 
-        // Row 0: Model & Favorites
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0; controlBar.add(new JLabel("Model:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; controlBar.add(modelComboBox, gbc);
-        gbc.gridx = 2; gbc.weightx = 0.0; controlBar.add(favoriteFilterBtn, gbc);
+        JLabel modelLabel = new JLabel("Model:"); modelLabel.setForeground(DARK_TEXT);
+        JLabel promptLabel = new JLabel("Prompt:"); promptLabel.setForeground(DARK_TEXT);
+        JLabel vulnLabel = new JLabel("Vuln:"); vulnLabel.setForeground(DARK_TEXT);
 
-        // Row 1: Prompt Template & Vuln Class
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0; controlBar.add(new JLabel("Prompt Category:"), gbc);
+        // Row 0: Model, Star Toggle, Favorites Filter
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0; controlBar.add(modelLabel, gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; controlBar.add(modelComboBox, gbc);
+
+        JPanel starAndFilterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        starAndFilterPanel.setBackground(DARK_PANEL);
+        starAndFilterPanel.add(toggleFavoriteBtn);
+        starAndFilterPanel.add(favoriteFilterBtn);
+
+        gbc.gridx = 2; gbc.weightx = 0.0; controlBar.add(starAndFilterPanel, gbc);
+
+        // Row 1: Prompt & Vuln
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0; controlBar.add(promptLabel, gbc);
         gbc.gridx = 1; gbc.weightx = 0.5; controlBar.add(promptCategoryComboBox, gbc);
 
-        JPanel vulnPanel = new JPanel(new BorderLayout(5, 0));
-        vulnPanel.add(new JLabel("Vuln Class: "), BorderLayout.WEST);
+        JPanel vulnPanel = new JPanel(new BorderLayout(4, 0));
+        vulnPanel.setBackground(DARK_PANEL);
+        vulnPanel.add(vulnLabel, BorderLayout.WEST);
         vulnPanel.add(vulnClassComboBox, BorderLayout.CENTER);
 
         gbc.gridx = 2; gbc.weightx = 0.5; controlBar.add(vulnPanel, gbc);
 
-        // Attached Traffic Banner (Shows when traffic sent from Repeater/Proxy)
-        attachedTrafficBanner = new JPanel(new BorderLayout(5, 5));
-        attachedTrafficBanner.setBackground(new Color(230, 242, 255));
+        // Attached Traffic Card Banner
+        attachedTrafficBanner = new JPanel(new BorderLayout(8, 8));
+        attachedTrafficBanner.setBackground(DARK_PANEL);
         attachedTrafficBanner.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(180, 210, 245)),
-                new EmptyBorder(4, 8, 4, 8)
+                BorderFactory.createLineBorder(ORANGE_ACCENT, 1),
+                new EmptyBorder(6, 10, 6, 10)
         ));
-        attachedTrafficLabel = new JLabel("Attached Traffic: None");
-        attachedTrafficLabel.setForeground(new Color(20, 60, 140));
+        attachedTrafficLabel = new JLabel("📎 Attached HTTP Request & Response");
+        attachedTrafficLabel.setForeground(ORANGE_ACCENT);
+        attachedTrafficLabel.setFont(attachedTrafficLabel.getFont().deriveFont(Font.BOLD));
+
         JButton clearTrafficBtn = new JButton("Clear Traffic");
+        clearTrafficBtn.setBackground(DARK_BG);
+        clearTrafficBtn.setForeground(DARK_TEXT);
+        clearTrafficBtn.setFocusPainted(false);
         clearTrafficBtn.addActionListener(e -> clearAttachedTraffic());
 
         attachedTrafficBanner.add(attachedTrafficLabel, BorderLayout.CENTER);
         attachedTrafficBanner.add(clearTrafficBtn, BorderLayout.EAST);
         attachedTrafficBanner.setVisible(false);
 
-        JPanel headerContainer = new JPanel(new BorderLayout());
+        JPanel headerContainer = new JPanel(new BorderLayout(4, 4));
+        headerContainer.setBackground(DARK_BG);
         headerContainer.add(controlBar, BorderLayout.NORTH);
         headerContainer.add(attachedTrafficBanner, BorderLayout.SOUTH);
 
-        // Center Chat Display (Rich Text / Markdown)
+        // Center Chat Display
         chatDisplayPane = new JEditorPane();
         chatDisplayPane.setContentType("text/html");
         chatDisplayPane.setEditable(false);
+        chatDisplayPane.setBackground(DARK_BG);
 
-        // Bottom Input Bar & Action Buttons
-        JPanel bottomPanel = new JPanel(new BorderLayout(5, 5));
+        JScrollPane chatScroll = new JScrollPane(chatDisplayPane);
+        chatScroll.setBorder(BorderFactory.createLineBorder(DARK_BORDER));
+
+        // Bottom Prompt Input & Action Buttons
+        JPanel bottomPanel = new JPanel(new BorderLayout(6, 6));
+        bottomPanel.setBackground(DARK_BG);
 
         promptInputArea = new JTextArea(3, 40);
         promptInputArea.setLineWrap(true);
         promptInputArea.setWrapStyleWord(true);
+        promptInputArea.setBackground(DARK_PANEL);
+        promptInputArea.setForeground(DARK_TEXT);
+        promptInputArea.setCaretColor(DARK_TEXT);
+        promptInputArea.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        sendButton = new JButton("Send Prompt");
-        sendButton.setFont(sendButton.getFont().deriveFont(Font.BOLD));
-        sendButton.addActionListener(e -> sendCurrentPrompt());
+        JScrollPane promptScroll = new JScrollPane(promptInputArea);
+        promptScroll.setBorder(BorderFactory.createLineBorder(DARK_BORDER));
 
-        JPanel actionBtnsBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
-        JButton copyMarkdownBtn = new JButton("Copy Analysis");
-        copyMarkdownBtn.addActionListener(e -> copyCurrentAnalysis());
+        JPanel actionBtnsBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        actionBtnsBar.setBackground(DARK_BG);
 
-        JButton exportSessionBtn = new JButton("Export Session");
+        JButton copyAnalysisBtn = new JButton("📋 Copy Analysis");
+        copyAnalysisBtn.setBackground(DARK_PANEL);
+        copyAnalysisBtn.setForeground(DARK_TEXT);
+        copyAnalysisBtn.setFocusPainted(false);
+        copyAnalysisBtn.addActionListener(e -> copyCurrentAnalysis());
+
+        JButton exportSessionBtn = new JButton("📥 Export");
+        exportSessionBtn.setBackground(DARK_PANEL);
+        exportSessionBtn.setForeground(DARK_TEXT);
+        exportSessionBtn.setFocusPainted(false);
         exportSessionBtn.addActionListener(e -> exportCurrentSession());
 
-        actionBtnsBar.add(copyMarkdownBtn);
+        sendButton = new JButton("🚀 Send");
+        sendButton.setBackground(ORANGE_ACCENT);
+        sendButton.setForeground(Color.WHITE);
+        sendButton.setFont(sendButton.getFont().deriveFont(Font.BOLD));
+        sendButton.setFocusPainted(false);
+        sendButton.addActionListener(e -> sendCurrentPrompt());
+
         actionBtnsBar.add(exportSessionBtn);
+        actionBtnsBar.add(copyAnalysisBtn);
         actionBtnsBar.add(sendButton);
 
-        bottomPanel.add(new JScrollPane(promptInputArea), BorderLayout.CENTER);
+        bottomPanel.add(promptScroll, BorderLayout.CENTER);
         bottomPanel.add(actionBtnsBar, BorderLayout.SOUTH);
 
         mainArea.add(headerContainer, BorderLayout.NORTH);
-        mainArea.add(new JScrollPane(chatDisplayPane), BorderLayout.CENTER);
+        mainArea.add(chatScroll, BorderLayout.CENTER);
         mainArea.add(bottomPanel, BorderLayout.SOUTH);
 
         return mainArea;
+    }
+
+    private JPanel createBottomStatusBar() {
+        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 4));
+        statusBar.setBackground(DARK_PANEL);
+        statusBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, DARK_BORDER));
+
+        statusModelLabel = new JLabel("⚡ Select Model");
+        statusModelLabel.setForeground(DARK_TEXT);
+        statusModelLabel.setFont(statusModelLabel.getFont().deriveFont(11f));
+
+        statusTokensLabel = new JLabel("🧮 Tokens Ready");
+        statusTokensLabel.setForeground(DARK_TEXT);
+        statusTokensLabel.setFont(statusTokensLabel.getFont().deriveFont(11f));
+
+        statusApiConnectionLabel = new JLabel("🟢 API Connected");
+        statusApiConnectionLabel.setForeground(new Color(52, 211, 153));
+        statusApiConnectionLabel.setFont(statusApiConnectionLabel.getFont().deriveFont(Font.BOLD, 11f));
+
+        statusBar.add(statusModelLabel);
+        statusBar.add(statusTokensLabel);
+        statusBar.add(statusApiConnectionLabel);
+
+        return statusBar;
+    }
+
+    private void filterSessions() {
+        String query = searchSessionsField.getText().trim().toLowerCase();
+        sessionListModel.clear();
+        for (ChatSession session : storageManager.getSessions()) {
+            if (query.isEmpty() || session.getTitle().toLowerCase().contains(query)) {
+                sessionListModel.addElement(session);
+            }
+        }
     }
 
     private void loadSessionsAndActive() {
@@ -259,7 +427,7 @@ public class MainTabPanel extends JPanel {
             sessionList.setSelectedValue(targetSession, true);
         }
 
-        attachedTrafficLabel.setText("Attached Traffic: " + method + " " + url);
+        attachedTrafficLabel.setText("📎 Attached HTTP Traffic (" + method + " " + url + ")");
         attachedTrafficBanner.setVisible(true);
 
         revalidate();
@@ -276,34 +444,29 @@ public class MainTabPanel extends JPanel {
     private void refreshModelsAndConfig() {
         ExtensionConfig config = storageManager.getConfig();
 
-        // Populate Prompt Templates
         promptCategoryComboBox.removeAllItems();
         promptCategoryComboBox.addItem("-- Select Prompt Template --");
         for (String promptName : config.getCustomPrompts().keySet()) {
             promptCategoryComboBox.addItem(promptName);
         }
 
-        // Populate Vuln Classes
         vulnClassComboBox.removeAllItems();
         vulnClassComboBox.addItem("-- Select Vuln Class --");
         for (String vulnName : config.getVulnerabilityClasses().keySet()) {
             vulnClassComboBox.addItem(vulnName);
         }
 
-        // Populate Model list asynchronously
-        SwingWorker<List<String>, Void> worker = new SwingWorker<>() {
+        SwingWorker<List<ModelEntry>, Void> worker = new SwingWorker<>() {
             @Override
-            protected List<String> doInBackground() {
+            protected List<ModelEntry> doInBackground() {
                 return apiClient.fetchAvailableModels(config);
             }
 
             @Override
             protected void done() {
                 try {
-                    List<String> models = get();
-                    if (!models.isEmpty()) {
-                        populateModelComboBoxWithList(models);
-                    }
+                    cachedFetchedModels = get();
+                    renderModelComboBox();
                 } catch (Exception ignored) {
                 }
             }
@@ -311,24 +474,51 @@ public class MainTabPanel extends JPanel {
         worker.execute();
     }
 
-    private void populateModelComboBox() {
-        refreshModelsAndConfig();
-    }
-
-    private void populateModelComboBoxWithList(List<String> models) {
+    private void renderModelComboBox() {
         ExtensionConfig config = storageManager.getConfig();
         boolean favoritesOnly = favoriteFilterBtn.isSelected();
 
         modelComboBox.removeAllItems();
-        for (String m : models) {
-            if (!favoritesOnly || config.getFavoriteModels().contains(m)) {
+        ModelEntry toSelect = null;
+
+        for (ModelEntry m : cachedFetchedModels) {
+            if (!favoritesOnly || config.getFavoriteModels().contains(m.getRawModelId())) {
                 modelComboBox.addItem(m);
+                if (m.getRawModelId().equals(config.getSelectedModel())) {
+                    toSelect = m;
+                }
             }
         }
 
-        if (config.getSelectedModel() != null) {
-            modelComboBox.setSelectedItem(config.getSelectedModel());
+        if (toSelect != null) {
+            modelComboBox.setSelectedItem(toSelect);
         }
+        updateFavoriteStarButtonState();
+    }
+
+    private void updateFavoriteStarButtonState() {
+        ModelEntry selected = (ModelEntry) modelComboBox.getSelectedItem();
+        if (selected != null) {
+            ExtensionConfig config = storageManager.getConfig();
+            boolean isFav = config.getFavoriteModels().contains(selected.getRawModelId());
+            toggleFavoriteBtn.setText(isFav ? "★ Favorited" : "☆ Star");
+            statusModelLabel.setText("⚡ " + selected.getDisplayName());
+        }
+    }
+
+    private void toggleCurrentModelFavorite() {
+        ModelEntry selected = (ModelEntry) modelComboBox.getSelectedItem();
+        if (selected == null) return;
+
+        ExtensionConfig config = storageManager.getConfig();
+        String rawId = selected.getRawModelId();
+        if (config.getFavoriteModels().contains(rawId)) {
+            config.getFavoriteModels().remove(rawId);
+        } else {
+            config.getFavoriteModels().add(rawId);
+        }
+        storageManager.saveConfig(config);
+        updateFavoriteStarButtonState();
     }
 
     private void onPromptCategorySelected() {
@@ -370,9 +560,10 @@ public class MainTabPanel extends JPanel {
         }
 
         ExtensionConfig config = storageManager.getConfig();
-        String selectedModel = (String) modelComboBox.getSelectedItem();
+        ModelEntry selectedModel = (ModelEntry) modelComboBox.getSelectedItem();
         if (selectedModel != null) {
-            config.setSelectedModel(selectedModel);
+            config.setSelectedModel(selectedModel.getRawModelId());
+            statusModelLabel.setText("⚡ " + selectedModel.getDisplayName());
             storageManager.saveConfig(config);
         }
 
@@ -397,7 +588,7 @@ public class MainTabPanel extends JPanel {
 
         StringBuilder fullResponseBuffer = new StringBuilder();
 
-        apiClient.streamChatCompletion(config, activeSession.getMessages().subList(0, activeSession.getMessages().size() - 1), userPrompt, new ApiClient.StreamCallback() {
+        apiClient.streamChatCompletion(config, selectedModel, activeSession.getMessages().subList(0, activeSession.getMessages().size() - 1), userPrompt, new ApiClient.StreamCallback() {
             @Override
             public void onChunk(String chunk) {
                 fullResponseBuffer.append(chunk);
@@ -437,9 +628,9 @@ public class MainTabPanel extends JPanel {
 
         for (ChatMessage msg : activeSession.getMessages()) {
             if (msg.getRole() == ChatMessage.Role.USER) {
-                sb.append("### 👤 You\n");
+                sb.append("<div class='user-bubble'><h3>👤 You</h3>");
             } else if (msg.getRole() == ChatMessage.Role.ASSISTANT) {
-                sb.append("### 🤖 AI Assistant\n");
+                sb.append("<div class='ai-bubble'><h3>🤖 AI Assistant</h3>");
             }
 
             if (msg.getContent() != null && !msg.getContent().isEmpty()) {
@@ -447,20 +638,29 @@ public class MainTabPanel extends JPanel {
             }
 
             if (msg.getHttpRequest() != null && !msg.getHttpRequest().isEmpty()) {
-                sb.append("**Attached HTTP Request:** (`").append(msg.getHttpUrl() != null ? msg.getHttpUrl() : "").append("`)\n```http\n")
-                        .append(msg.getHttpRequest()).append("\n```\n\n");
+                String method = msg.getHttpMethod() != null ? msg.getHttpMethod().toUpperCase() : "GET";
+                String badgeClass = "POST".equalsIgnoreCase(method) ? "badge-post" : "badge-get";
+
+                sb.append("<div class='traffic-card'>")
+                        .append("<span class='").append(badgeClass).append("'>HTTP Request ").append(method).append("</span> ")
+                        .append("<code>").append(msg.getHttpUrl() != null ? msg.getHttpUrl() : "").append("</code><br/><br/>")
+                        .append("```http\n").append(msg.getHttpRequest()).append("\n```\n</div>\n\n");
             }
 
             if (msg.getHttpResponse() != null && !msg.getHttpResponse().isEmpty()) {
-                sb.append("**Attached HTTP Response:**\n```http\n")
-                        .append(msg.getHttpResponse()).append("\n```\n\n");
+                sb.append("<div class='traffic-card'>")
+                        .append("<strong>HTTP Response:</strong><br/>")
+                        .append("```http\n").append(msg.getHttpResponse()).append("\n```\n</div>\n\n");
             }
 
-            sb.append("---\n\n");
+            sb.append("</div><hr/>");
         }
 
         chatDisplayPane.setText(MarkdownUtil.toHtml(sb.toString()));
-        chatDisplayPane.setCaretPosition(chatDisplayPane.getDocument().getLength());
+        try {
+            chatDisplayPane.setCaretPosition(Math.max(0, chatDisplayPane.getDocument().getLength() - 1));
+        } catch (Exception ignored) {
+        }
     }
 
     private void copyCurrentAnalysis() {

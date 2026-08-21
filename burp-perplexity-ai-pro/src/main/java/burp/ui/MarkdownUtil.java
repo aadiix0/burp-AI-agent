@@ -20,19 +20,27 @@ public class MarkdownUtil {
         }
         String bodyHtml = RENDERER.render(PARSER.parse(markdown));
 
-        // Modern, clean, high-contrast dark/light compatible CSS styling for Burp
+        // Modern, high-contrast dark theme matching AIAssistantProRedesigned
         return "<html><head><style>"
-                + "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; padding: 10px; margin: 0; }"
-                + "h1, h2, h3, h4 { color: #2060df; font-weight: 600; margin-top: 14px; margin-bottom: 6px; }"
-                + "p { margin-top: 0; margin-bottom: 8px; }"
-                + "code { font-family: 'Consolas', 'Courier New', monospace; background-color: rgba(120,120,120,0.15); padding: 2px 5px; border-radius: 4px; font-size: 12px; }"
-                + "pre { font-family: 'Consolas', 'Courier New', monospace; background-color: #1e1e2e; color: #f8f8f2; padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 12px; border: 1px solid #333; }"
-                + "pre code { background-color: transparent; padding: 0; color: inherit; }"
-                + "blockquote { border-left: 4px solid #2060df; margin: 0 0 10px 0; padding-left: 10px; opacity: 0.85; }"
-                + "ul, ol { margin-top: 0; margin-bottom: 8px; padding-left: 20px; }"
-                + "table { border-collapse: collapse; width: 100%; margin-bottom: 10px; }"
-                + "th, td { border: 1px solid #444; padding: 6px 10px; text-align: left; font-size: 12px; }"
-                + "th { background-color: rgba(120,120,120,0.2); font-weight: bold; }"
+                + "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.6; padding: 12px; margin: 0; background-color: #18181c; color: #d4d4d8; }"
+                + "h1, h2, h3, h4 { color: #f4f4f5; font-weight: 600; margin-top: 14px; margin-bottom: 6px; border-bottom: 1px solid #27272a; padding-bottom: 4px; }"
+                + "p { margin-top: 0; margin-bottom: 10px; color: #e4e4e7; }"
+                + "code { font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace; background-color: #27272a; color: #f97316; padding: 2px 6px; border-radius: 4px; font-size: 12px; }"
+                + "pre { font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace; background-color: #09090b; color: #f4f4f5; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 12px; border: 1px solid #27272a; line-height: 1.4; }"
+                + "pre code { background-color: transparent; padding: 0; color: #38bdf8; }"
+                + "blockquote { border-left: 3px solid #f97316; margin: 0 0 12px 0; padding-left: 12px; color: #a1a1aa; background-color: #1f1f23; padding-top: 6px; padding-bottom: 6px; border-radius: 0 6px 6px 0; }"
+                + "ul, ol { margin-top: 0; margin-bottom: 10px; padding-left: 22px; color: #e4e4e7; }"
+                + "li { margin-bottom: 4px; }"
+                + "table { border-collapse: collapse; width: 100%; margin-bottom: 12px; border-radius: 6px; overflow: hidden; }"
+                + "th, td { border: 1px solid #27272a; padding: 8px 12px; text-align: left; font-size: 12px; }"
+                + "th { background-color: #27272a; color: #f4f4f5; font-weight: 600; }"
+                + "td { background-color: #1f1f23; }"
+                + "hr { border: none; border-top: 1px solid #27272a; margin: 16px 0; }"
+                + ".user-bubble { background-color: #1f1f23; border: 1px solid #27272a; border-radius: 8px; padding: 12px; margin-bottom: 14px; }"
+                + ".ai-bubble { background-color: #18181c; border: 1px solid #27272a; border-radius: 8px; padding: 12px; margin-bottom: 14px; }"
+                + ".badge-get { background-color: #1e3a8a; color: #60a5fa; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }"
+                + ".badge-post { background-color: #065f46; color: #34d399; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }"
+                + ".traffic-card { background-color: #09090b; border: 1px solid #27272a; border-radius: 6px; padding: 10px; margin: 8px 0; }"
                 + "</style></head><body>"
                 + bodyHtml
                 + "</body></html>";

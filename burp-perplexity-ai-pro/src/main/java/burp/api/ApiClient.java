@@ -16,11 +16,14 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class ApiClient {
     public static final String NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1";
     public static final String OPENCODE_ZEN_BASE_URL = "https://api.opencodezen.com/v1";
+
+    public static final String PROVIDER_NVIDIA = "NVIDIA";
+    public static final String PROVIDER_OPENCODE = "OpenCode Zen";
+    public static final String PROVIDER_CUSTOM = "Custom";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -30,34 +33,60 @@ public class ApiClient {
         void onComplete();
     }
 
-    public List<String> fetchAvailableModels(ExtensionConfig config) {
-        List<String> models = new ArrayList<>();
+    public static class ModelEntry {
+        private final String provider;
+        private final String rawModelId;
+        private final String displayName;
 
-        // Fetch NVIDIA models if API key present
+        public ModelEntry(String provider, String rawModelId) {
+            this.provider = provider;
+            this.rawModelId = rawModelId;
+            this.displayName = provider + ": " + rawModelId;
+        }
+
+        public String getProvider() { return provider; }
+        public String getRawModelId() { return rawModelId; }
+        public String getDisplayName() { return displayName; }
+
+        @Override
+        public String toString() {
+            return displayName;
+        }
+    }
+
+    public List<ModelEntry> fetchAvailableModels(ExtensionConfig config) {
+        List<ModelEntry> models = new ArrayList<>();
+
         if (config.getNvidiaApiKey() != null && !config.getNvidiaApiKey().trim().isEmpty()) {
-            models.addAll(fetchModelsFromEndpoint(NVIDIA_BASE_URL + "/models", config.getNvidiaApiKey()));
+            List<String> list = fetchModelsFromEndpoint(NVIDIA_BASE_URL + "/models", config.getNvidiaApiKey());
+            for (String m : list) {
+                models.add(new ModelEntry(PROVIDER_NVIDIA, m));
+            }
         }
 
-        // Fetch OpenCode Zen models if API key present
         if (config.getOpenCodeZenApiKey() != null && !config.getOpenCodeZenApiKey().trim().isEmpty()) {
-            models.addAll(fetchModelsFromEndpoint(OPENCODE_ZEN_BASE_URL + "/models", config.getOpenCodeZenApiKey()));
+            List<String> list = fetchModelsFromEndpoint(OPENCODE_ZEN_BASE_URL + "/models", config.getOpenCodeZenApiKey());
+            for (String m : list) {
+                models.add(new ModelEntry(PROVIDER_OPENCODE, m));
+            }
         }
 
-        // Fetch Custom models if Custom API URL present
         if (config.getCustomApiUrl() != null && !config.getCustomApiUrl().trim().isEmpty()) {
             String baseUrl = config.getCustomApiUrl().replaceAll("/+$", "");
             if (!baseUrl.endsWith("/models")) {
                 baseUrl += "/models";
             }
-            models.addAll(fetchModelsFromEndpoint(baseUrl, config.getCustomApiKey()));
+            List<String> list = fetchModelsFromEndpoint(baseUrl, config.getCustomApiKey());
+            for (String m : list) {
+                models.add(new ModelEntry(PROVIDER_CUSTOM, m));
+            }
         }
 
-        // Fallback default models if none loaded
         if (models.isEmpty()) {
-            models.add("nvidia/llama-3.1-nemotron-70b-instruct");
-            models.add("meta/llama-3.3-70b-instruct");
-            models.add("deepseek-ai/deepseek-r1");
-            models.add("opencode-zen/coder-70b");
+            models.add(new ModelEntry(PROVIDER_NVIDIA, "nvidia/llama-3.1-nemotron-70b-instruct"));
+            models.add(new ModelEntry(PROVIDER_NVIDIA, "meta/llama-3.3-70b-instruct"));
+            models.add(new ModelEntry(PROVIDER_NVIDIA, "deepseek-ai/deepseek-r1"));
+            models.add(new ModelEntry(PROVIDER_OPENCODE, "opencode-zen/coder-70b"));
         }
 
         return models;
@@ -93,20 +122,22 @@ public class ApiClient {
 
     public void streamChatCompletion(
             ExtensionConfig config,
+            ModelEntry modelEntry,
             List<ChatMessage> history,
             String newPrompt,
             StreamCallback callback) {
 
         new Thread(() -> {
             try {
-                String selectedModel = config.getSelectedModel();
                 String endpointUrl;
                 String apiKey;
+                String modelId = modelEntry != null ? modelEntry.getRawModelId() : config.getSelectedModel();
+                String provider = modelEntry != null ? modelEntry.getProvider() : PROVIDER_NVIDIA;
 
-                if (selectedModel.startsWith("opencode-zen/") || selectedModel.contains("opencode")) {
+                if (PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
                     endpointUrl = OPENCODE_ZEN_BASE_URL + "/chat/completions";
                     apiKey = config.getOpenCodeZenApiKey();
-                } else if (config.getCustomApiUrl() != null && !config.getCustomApiUrl().trim().isEmpty()) {
+                } else if (PROVIDER_CUSTOM.equalsIgnoreCase(provider)) {
                     String baseUrl = config.getCustomApiUrl().replaceAll("/+$", "");
                     endpointUrl = baseUrl.endsWith("/chat/completions") ? baseUrl : baseUrl + "/chat/completions";
                     apiKey = config.getCustomApiKey();
@@ -116,17 +147,16 @@ public class ApiClient {
                 }
 
                 if (apiKey == null || apiKey.trim().isEmpty()) {
-                    callback.onError(new IllegalArgumentException("API Key for the selected provider/model is not set in Extension Settings."));
+                    callback.onError(new IllegalArgumentException("API Key for " + provider + " is not set in Settings."));
                     return;
                 }
 
                 ObjectNode body = objectMapper.createObjectNode();
-                body.put("model", selectedModel);
+                body.put("model", modelId);
                 body.put("stream", true);
 
                 ArrayNode messagesNode = objectMapper.createArrayNode();
 
-                // System Prompt
                 if (config.getSystemPrompt() != null && !config.getSystemPrompt().trim().isEmpty()) {
                     ObjectNode sysMsg = objectMapper.createObjectNode();
                     sysMsg.put("role", "system");
@@ -134,7 +164,6 @@ public class ApiClient {
                     messagesNode.add(sysMsg);
                 }
 
-                // Chat History
                 for (ChatMessage msg : history) {
                     ObjectNode mNode = objectMapper.createObjectNode();
                     mNode.put("role", msg.getRole().name().toLowerCase());
