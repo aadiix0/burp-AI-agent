@@ -17,6 +17,7 @@ public class SettingsPanel extends JPanel {
     private JTextField nvidiaKeyField;
     private JTextField openCodeZenKeyField;
     private JTextField openCodeZenUrlField;
+    private JCheckBox openCodeZenFreeOnlyCheckBox;
     private JTextField customUrlField;
     private JTextField customKeyField;
     private JCheckBox enableInspectorCheckBox;
@@ -48,14 +49,19 @@ public class SettingsPanel extends JPanel {
         nvidiaKeyField = new JTextField(30);
         openCodeZenKeyField = new JTextField(30);
         openCodeZenUrlField = new JTextField(30);
+        openCodeZenFreeOnlyCheckBox = new JCheckBox("Show Only Free Models for OpenCode Zen (Filter out paid models)");
         customUrlField = new JTextField(30);
         customKeyField = new JTextField(30);
 
         addGridRow(keysPanel, gbc, 0, "NVIDIA API Key:", nvidiaKeyField);
         addGridRow(keysPanel, gbc, 1, "OpenCode Zen API Key:", openCodeZenKeyField);
         addGridRow(keysPanel, gbc, 2, "OpenCode Zen Base URL:", openCodeZenUrlField);
-        addGridRow(keysPanel, gbc, 3, "Custom API Base URL:", customUrlField);
-        addGridRow(keysPanel, gbc, 4, "Custom API Key:", customKeyField);
+
+        gbc.gridx = 1; gbc.gridy = 3; gbc.weightx = 1.0;
+        keysPanel.add(openCodeZenFreeOnlyCheckBox, gbc);
+
+        addGridRow(keysPanel, gbc, 4, "Custom API Base URL:", customUrlField);
+        addGridRow(keysPanel, gbc, 5, "Custom API Key:", customKeyField);
 
         formPanel.add(keysPanel);
         formPanel.add(Box.createVerticalStrut(15));
@@ -116,6 +122,7 @@ public class SettingsPanel extends JPanel {
         nvidiaKeyField.setText(config.getNvidiaApiKey());
         openCodeZenKeyField.setText(config.getOpenCodeZenApiKey());
         openCodeZenUrlField.setText(config.getOpenCodeZenBaseUrl());
+        openCodeZenFreeOnlyCheckBox.setSelected(config.isOpenCodeZenFreeOnly());
         customUrlField.setText(config.getCustomApiUrl());
         customKeyField.setText(config.getCustomApiKey());
         enableInspectorCheckBox.setSelected(config.isEnableInspectorTab());
@@ -127,6 +134,7 @@ public class SettingsPanel extends JPanel {
         config.setNvidiaApiKey(nvidiaKeyField.getText().trim());
         config.setOpenCodeZenApiKey(openCodeZenKeyField.getText().trim());
         config.setOpenCodeZenBaseUrl(openCodeZenUrlField.getText().trim());
+        config.setOpenCodeZenFreeOnly(openCodeZenFreeOnlyCheckBox.isSelected());
         config.setCustomApiUrl(customUrlField.getText().trim());
         config.setCustomApiKey(customKeyField.getText().trim());
         config.setEnableInspectorTab(enableInspectorCheckBox.isSelected());

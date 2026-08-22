@@ -67,7 +67,9 @@ public class ApiClient {
             String baseUrl = normalizeEndpointUrl(config.getOpenCodeZenBaseUrl(), "/models");
             List<String> list = fetchModelsFromEndpoint(baseUrl, config.getOpenCodeZenApiKey());
             for (String m : list) {
-                models.add(new ModelEntry(PROVIDER_OPENCODE, m));
+                if (!config.isOpenCodeZenFreeOnly() || m.toLowerCase().endsWith("-free")) {
+                    models.add(new ModelEntry(PROVIDER_OPENCODE, m));
+                }
             }
         }
 
@@ -98,11 +100,13 @@ public class ApiClient {
 
         if (!hasOpenCode) {
             models.add(new ModelEntry(PROVIDER_OPENCODE, "deepseek-v4-flash-free"));
-            models.add(new ModelEntry(PROVIDER_OPENCODE, "deepseek-v4-flash"));
             models.add(new ModelEntry(PROVIDER_OPENCODE, "mimo-v2.5-free"));
-            models.add(new ModelEntry(PROVIDER_OPENCODE, "deepseek-v4-pro"));
-            models.add(new ModelEntry(PROVIDER_OPENCODE, "gpt-5.6-sol"));
-            models.add(new ModelEntry(PROVIDER_OPENCODE, "claude-sonnet-4-5"));
+            if (!config.isOpenCodeZenFreeOnly()) {
+                models.add(new ModelEntry(PROVIDER_OPENCODE, "deepseek-v4-flash"));
+                models.add(new ModelEntry(PROVIDER_OPENCODE, "deepseek-v4-pro"));
+                models.add(new ModelEntry(PROVIDER_OPENCODE, "gpt-5.6-sol"));
+                models.add(new ModelEntry(PROVIDER_OPENCODE, "claude-sonnet-4-5"));
+            }
         }
 
         return models;

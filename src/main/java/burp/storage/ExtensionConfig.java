@@ -8,6 +8,7 @@ public class ExtensionConfig {
     private String nvidiaApiKey = "";
     private String openCodeZenApiKey = "";
     private String openCodeZenBaseUrl = "https://opencode.ai/zen/v1";
+    private boolean openCodeZenFreeOnly = true;
     private String customApiUrl = "";
     private String customApiKey = "";
     private String selectedModel = "nvidia/llama-3.1-nemotron-70b-instruct";
@@ -67,6 +68,14 @@ public class ExtensionConfig {
 
     public void setOpenCodeZenApiKey(String openCodeZenApiKey) {
         this.openCodeZenApiKey = openCodeZenApiKey;
+    }
+
+    public boolean isOpenCodeZenFreeOnly() {
+        return openCodeZenFreeOnly;
+    }
+
+    public void setOpenCodeZenFreeOnly(boolean openCodeZenFreeOnly) {
+        this.openCodeZenFreeOnly = openCodeZenFreeOnly;
     }
 
     public String getOpenCodeZenBaseUrl() {
