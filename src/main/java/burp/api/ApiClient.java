@@ -257,7 +257,7 @@ public class ApiClient {
     }
 
     private String createDeepSeekWebSession(ExtensionConfig config, String authToken, String cookie) throws Exception {
-        URL url = new URL("https://chat.deepseek.com/api/v6/chat/session/create");
+        URL url = new URL("https://chat.deepseek.com/api/v0/chat/session/create");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setConnectTimeout(8000);
@@ -363,7 +363,28 @@ public class ApiClient {
                 }
             }
 
-            String endpointUrl = "https://chat.deepseek.com/api/v6/chat/completion";
+            String endpointUrl = "https://chat.deepseek.com/api/v0/chat/completion";
+
+            // If x-ds-pow-response contains a specific target_path, match it dynamically
+            if (config != null && config.getDeepSeekWebCustomHeaders() != null) {
+                for (java.util.Map.Entry<String, String> entry : config.getDeepSeekWebCustomHeaders().entrySet()) {
+                    if ("x-ds-pow-response".equalsIgnoreCase(entry.getKey())) {
+                        String pow = entry.getValue();
+                        if (pow != null && pow.contains("target_path")) {
+                            try {
+                                JsonNode powJson = objectMapper.readTree(pow);
+                                if (powJson.has("target_path")) {
+                                    String targetPath = powJson.get("target_path").asText();
+                                    if (targetPath.startsWith("/")) {
+                                        endpointUrl = "https://chat.deepseek.com" + targetPath;
+                                    }
+                                }
+                            } catch (Exception ignored) {
+                            }
+                        }
+                    }
+                }
+            }
             URL url = new URL(endpointUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
