@@ -158,7 +158,7 @@ public class ApiClient {
                 String provider = modelEntry != null ? modelEntry.getProvider() : PROVIDER_NVIDIA;
 
                 if (PROVIDER_DEEPSEEK_WEB.equalsIgnoreCase(provider)) {
-                    streamDeepSeekWebCompletion(config, currentSession, history, thinkingEnabled, searchEnabled, expertMode, callback);
+                    streamDeepSeekWebCompletion(config, currentSession, history, newPrompt, thinkingEnabled, searchEnabled, expertMode, callback);
                     return;
                 } else if (PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
                     endpointUrl = normalizeEndpointUrl(config.getOpenCodeZenBaseUrl(), "/chat/completions");
@@ -268,9 +268,15 @@ public class ApiClient {
             os.write(input, 0, input.length);
         }
 
-        if (conn.getResponseCode() == 200) {
-            try (InputStream is = conn.getInputStream()) {
-                JsonNode root = objectMapper.readTree(is);
+        int code = conn.getResponseCode();
+        InputStream is = (code == 200) ? conn.getInputStream() : conn.getErrorStream();
+        if (is != null) {
+            String rawResp = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            if (rawResp.trim().startsWith("<") || rawResp.contains("<html") || rawResp.contains("<!DOCTYPE")) {
+                throw new RuntimeException("Cloudflare / Web protection returned HTML (HTTP " + code + "). Please update Auth Token / Cookies in Settings.");
+            }
+            if (code == 200) {
+                JsonNode root = objectMapper.readTree(rawResp);
                 if (root.has("data") && root.get("data").has("biz_data") && root.get("data").get("biz_data").has("chat_session_id")) {
                     return root.get("data").get("biz_data").get("chat_session_id").asText();
                 } else if (root.has("data") && root.get("data").has("chat_session_id")) {
@@ -308,6 +314,7 @@ public class ApiClient {
             ExtensionConfig config,
             burp.model.ChatSession currentSession,
             List<ChatMessage> history,
+            String newPrompt,
             boolean thinkingEnabled,
             boolean searchEnabled,
             boolean expertMode,
@@ -346,8 +353,8 @@ public class ApiClient {
             body.put("search_enabled", expertMode ? false : searchEnabled);
             body.put("mode", expertMode ? "expert" : "instant");
 
-            String promptText = "";
-            if (!history.isEmpty()) {
+            String promptText = (newPrompt != null && !newPrompt.trim().isEmpty()) ? newPrompt.trim() : "";
+            if (promptText.isEmpty() && !history.isEmpty()) {
                 ChatMessage lastMsg = history.get(history.size() - 1);
                 if (lastMsg.getRole() == ChatMessage.Role.USER) {
                     promptText = buildFormattedMessageContent(lastMsg);
@@ -368,6 +375,13 @@ public class ApiClient {
                 mNode.put("role", msg.getRole().name().toLowerCase());
                 mNode.put("content", buildFormattedMessageContent(msg));
                 messagesNode.add(mNode);
+            }
+
+            if (newPrompt != null && !newPrompt.trim().isEmpty()) {
+                ObjectNode userMsg = objectMapper.createObjectNode();
+                userMsg.put("role", "user");
+                userMsg.put("content", newPrompt.trim());
+                messagesNode.add(userMsg);
             }
             body.set("messages", messagesNode);
 
@@ -394,6 +408,10 @@ public class ApiClient {
                             break;
                         }
                         try {
+                            if (data.trim().startsWith("<") || data.contains("<html") || data.contains("<!DOCTYPE")) {
+                                callback.onError(new RuntimeException("Cloudflare / Web protection returned HTML page. Please update Auth Token / Cookies in Settings."));
+                                return;
+                            }
                             JsonNode root = objectMapper.readTree(data);
                             if (root.has("choices") && root.get("choices").isArray() && root.get("choices").size() > 0) {
                                 JsonNode choice = root.get("choices").get(0);
