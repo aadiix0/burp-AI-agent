@@ -34,11 +34,6 @@ public class MainTabPanel extends JPanel {
     private JComboBox<ModelEntry> modelComboBox;
     private JButton toggleFavoriteBtn;
     private JToggleButton favoriteFilterBtn;
-
-    private JToggleButton deepSeekModeToggleBtn;
-    private JToggleButton deepThinkToggleBtn;
-    private JToggleButton webSearchToggleBtn;
-
     private JComboBox<String> promptCategoryComboBox;
     private JComboBox<String> vulnClassComboBox;
 
@@ -342,11 +337,8 @@ public class MainTabPanel extends JPanel {
         modelComboBox = new JComboBox<>();
         modelComboBox.setBackground(DARK_BG);
         modelComboBox.setForeground(DARK_TEXT);
-        modelComboBox.setPreferredSize(new Dimension(280, 26));
-        modelComboBox.addActionListener(e -> {
-            updateFavoriteStarButtonState();
-            updateDeepSeekWebControlsState();
-        });
+        modelComboBox.setMaximumSize(new Dimension(300, 24));
+        modelComboBox.addActionListener(e -> updateFavoriteStarButtonState());
 
         toggleFavoriteBtn = new JButton("☆ Star");
         toggleFavoriteBtn.setBackground(DARK_BG);
@@ -364,48 +356,12 @@ public class MainTabPanel extends JPanel {
         lightningLabel.setForeground(ORANGE_ACCENT);
         lightningLabel.setFont(lightningLabel.getFont().deriveFont(Font.BOLD, 12f));
 
-        JPanel modelControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
+        JPanel modelControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         modelControls.setBackground(DARK_PANEL);
         modelControls.add(lightningLabel);
         modelControls.add(modelComboBox);
         modelControls.add(toggleFavoriteBtn);
         modelControls.add(favoriteFilterBtn);
-
-        deepSeekModeToggleBtn = new JToggleButton("⚡ Instant");
-        deepSeekModeToggleBtn.setBackground(DARK_BG);
-        deepSeekModeToggleBtn.setForeground(DARK_TEXT);
-        deepSeekModeToggleBtn.setFocusPainted(false);
-        deepSeekModeToggleBtn.setToolTipText("Toggle between Instant and Expert modes");
-        deepSeekModeToggleBtn.addActionListener(e -> {
-            boolean expert = deepSeekModeToggleBtn.isSelected();
-            deepSeekModeToggleBtn.setText(expert ? "🎓 Expert" : "⚡ Instant");
-            deepSeekModeToggleBtn.setForeground(expert ? ORANGE_ACCENT : DARK_TEXT);
-            updateDeepSeekWebControlsState();
-        });
-
-        deepThinkToggleBtn = new JToggleButton("🧠 DeepThink");
-        deepThinkToggleBtn.setBackground(DARK_BG);
-        deepThinkToggleBtn.setForeground(DARK_TEXT);
-        deepThinkToggleBtn.setFocusPainted(false);
-        deepThinkToggleBtn.setToolTipText("Enable or disable R1 DeepThink reasoning");
-        deepThinkToggleBtn.addActionListener(e -> {
-            boolean active = deepThinkToggleBtn.isSelected();
-            deepThinkToggleBtn.setForeground(active ? ORANGE_ACCENT : DARK_TEXT);
-        });
-
-        webSearchToggleBtn = new JToggleButton("🌐 Search");
-        webSearchToggleBtn.setBackground(DARK_BG);
-        webSearchToggleBtn.setForeground(DARK_TEXT);
-        webSearchToggleBtn.setFocusPainted(false);
-        webSearchToggleBtn.setToolTipText("Enable web search (Instant mode only)");
-        webSearchToggleBtn.addActionListener(e -> {
-            boolean active = webSearchToggleBtn.isSelected();
-            webSearchToggleBtn.setForeground(active ? ORANGE_ACCENT : DARK_TEXT);
-        });
-
-        modelControls.add(deepSeekModeToggleBtn);
-        modelControls.add(deepThinkToggleBtn);
-        modelControls.add(webSearchToggleBtn);
 
         statusTokensLabel = new JLabel("💾 ~2.4k tokens");
         statusTokensLabel.setForeground(DARK_TEXT);
@@ -415,12 +371,12 @@ public class MainTabPanel extends JPanel {
         statusApiConnectionLabel.setForeground(new Color(52, 211, 153));
         statusApiConnectionLabel.setFont(statusApiConnectionLabel.getFont().deriveFont(Font.BOLD, 11f));
 
-        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 2));
+        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
         rightControls.setBackground(DARK_PANEL);
         rightControls.add(statusTokensLabel);
         rightControls.add(statusApiConnectionLabel);
 
-        statusBar.add(modelControls, BorderLayout.CENTER);
+        statusBar.add(modelControls, BorderLayout.WEST);
         statusBar.add(rightControls, BorderLayout.EAST);
 
         return statusBar;
@@ -579,38 +535,7 @@ public class MainTabPanel extends JPanel {
             modelComboBox.setSelectedItem(toSelect);
         }
         updateFavoriteStarButtonState();
-        updateDeepSeekWebControlsState();
         checkApiConnectivity();
-    }
-
-    private void updateDeepSeekWebControlsState() {
-        if (deepSeekModeToggleBtn == null || deepThinkToggleBtn == null || webSearchToggleBtn == null) {
-            return;
-        }
-
-        ModelEntry selected = (ModelEntry) modelComboBox.getSelectedItem();
-        boolean isDeepSeekWeb = selected != null && ApiClient.PROVIDER_DEEPSEEK_WEB.equalsIgnoreCase(selected.getProvider());
-
-        deepSeekModeToggleBtn.setVisible(isDeepSeekWeb);
-        deepThinkToggleBtn.setVisible(isDeepSeekWeb);
-        webSearchToggleBtn.setVisible(isDeepSeekWeb);
-
-        if (isDeepSeekWeb) {
-            boolean isExpert = deepSeekModeToggleBtn.isSelected();
-            if (isExpert) {
-                webSearchToggleBtn.setSelected(false);
-                webSearchToggleBtn.setEnabled(false);
-                webSearchToggleBtn.setForeground(Color.GRAY);
-                webSearchToggleBtn.setToolTipText("Web Search is not available in Expert mode");
-            } else {
-                webSearchToggleBtn.setEnabled(true);
-                webSearchToggleBtn.setForeground(webSearchToggleBtn.isSelected() ? ORANGE_ACCENT : DARK_TEXT);
-                webSearchToggleBtn.setToolTipText("Enable web search (Instant mode only)");
-            }
-        }
-
-        revalidate();
-        repaint();
     }
 
     private void updateFavoriteStarButtonState() {
@@ -637,12 +562,7 @@ public class MainTabPanel extends JPanel {
         String apiKey;
         String endpointUrl;
 
-        if (ApiClient.PROVIDER_DEEPSEEK_WEB.equalsIgnoreCase(provider)) {
-            apiKey = config.getDeepSeekWebAuthToken() != null && !config.getDeepSeekWebAuthToken().isEmpty()
-                    ? config.getDeepSeekWebAuthToken()
-                    : config.getDeepSeekWebCookie();
-            endpointUrl = "https://chat.deepseek.com";
-        } else if (ApiClient.PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
+        if (ApiClient.PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
             apiKey = config.getOpenCodeZenApiKey();
             endpointUrl = config.getOpenCodeZenBaseUrl();
         } else if (ApiClient.PROVIDER_CUSTOM.equalsIgnoreCase(provider)) {
@@ -665,19 +585,14 @@ public class MainTabPanel extends JPanel {
         new Thread(() -> {
             boolean reachable = false;
             try {
-                if (ApiClient.PROVIDER_DEEPSEEK_WEB.equalsIgnoreCase(provider)) {
-                    reachable = apiKey != null && !apiKey.trim().isEmpty();
-                } else {
-                    String checkUrl = ApiClient.normalizeEndpointUrl(endpointUrl, "/models");
-                    java.net.URL url = new java.net.URL(checkUrl);
-                    java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("GET");
-                    conn.setRequestProperty("Authorization", "Bearer " + apiKey.trim());
-                    conn.setConnectTimeout(3000);
-                    conn.setReadTimeout(3000);
-                    int code = conn.getResponseCode();
-                    reachable = (code == 200 || code == 401 || code == 403);
-                }
+                java.net.URL url = new java.net.URL(endpointUrl.replaceAll("/+$", "") + "/models");
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Authorization", "Bearer " + apiKey.trim());
+                conn.setConnectTimeout(3000);
+                conn.setReadTimeout(3000);
+                int code = conn.getResponseCode();
+                reachable = (code == 200 || code == 401 || code == 403);
             } catch (Exception ignored) {
             }
 
@@ -775,37 +690,20 @@ public class MainTabPanel extends JPanel {
 
         StringBuilder fullResponseBuffer = new StringBuilder();
 
-        boolean thinking = deepThinkToggleBtn.isSelected();
-        boolean search = webSearchToggleBtn.isSelected();
-        boolean expert = deepSeekModeToggleBtn.isSelected();
-
-        List<ChatMessage> historyForApi = activeSession.getMessages().size() > 2
-                ? activeSession.getMessages().subList(0, activeSession.getMessages().size() - 2)
-                : new ArrayList<>();
-
-        apiClient.streamChatCompletion(config, selectedModel, activeSession, historyForApi, userPrompt, thinking, search, expert, new ApiClient.StreamCallback() {
+        apiClient.streamChatCompletion(config, selectedModel, activeSession.getMessages().subList(0, activeSession.getMessages().size() - 1), userPrompt, new ApiClient.StreamCallback() {
             @Override
             public void onChunk(String chunk) {
                 fullResponseBuffer.append(chunk);
                 assistantMsg.setContent(fullResponseBuffer.toString());
-                SwingUtilities.invokeLater(() -> {
-                    renderActiveSessionChat();
-                    chatDisplayPane.revalidate();
-                    chatDisplayPane.repaint();
-                });
+                SwingUtilities.invokeLater(() -> renderActiveSessionChat());
             }
 
             @Override
             public void onError(Throwable throwable) {
                 SwingUtilities.invokeLater(() -> {
-                    String errContent = fullResponseBuffer.length() > 0
-                            ? fullResponseBuffer.toString() + "\n\n⚠️ **Error:** " + throwable.getMessage()
-                            : "⚠️ **Error:** " + throwable.getMessage();
-                    assistantMsg.setContent(errContent);
+                    assistantMsg.setContent("**Error:** " + throwable.getMessage());
                     storageManager.saveSession(activeSession);
                     renderActiveSessionChat();
-                    chatDisplayPane.revalidate();
-                    chatDisplayPane.repaint();
                     sendButton.setEnabled(true);
                 });
             }
@@ -813,13 +711,8 @@ public class MainTabPanel extends JPanel {
             @Override
             public void onComplete() {
                 SwingUtilities.invokeLater(() -> {
-                    if (fullResponseBuffer.length() == 0) {
-                        assistantMsg.setContent("*(No response received from model)*");
-                    }
                     storageManager.saveSession(activeSession);
                     renderActiveSessionChat();
-                    chatDisplayPane.revalidate();
-                    chatDisplayPane.repaint();
                     sendButton.setEnabled(true);
                 });
             }

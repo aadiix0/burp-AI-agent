@@ -8,9 +8,6 @@ public class ExtensionConfig {
     private String nvidiaApiKey = "";
     private String openCodeZenApiKey = "";
     private String openCodeZenBaseUrl = "https://opencode.ai/zen/v1";
-    private String deepSeekWebAuthToken = "";
-    private String deepSeekWebCookie = "";
-    private Map<String, String> deepSeekWebCustomHeaders = new LinkedHashMap<>();
     private String customApiUrl = "";
     private String customApiKey = "";
     private String selectedModel = "nvidia/llama-3.1-nemotron-70b-instruct";
@@ -81,39 +78,6 @@ public class ExtensionConfig {
 
     public void setOpenCodeZenBaseUrl(String openCodeZenBaseUrl) {
         this.openCodeZenBaseUrl = openCodeZenBaseUrl;
-    }
-
-    public String getDeepSeekWebAuthToken() {
-        return deepSeekWebAuthToken;
-    }
-
-    public void setDeepSeekWebAuthToken(String deepSeekWebAuthToken) {
-        this.deepSeekWebAuthToken = deepSeekWebAuthToken;
-    }
-
-    public String getDeepSeekWebCookie() {
-        return deepSeekWebCookie;
-    }
-
-    public void setDeepSeekWebCookie(String deepSeekWebCookie) {
-        this.deepSeekWebCookie = deepSeekWebCookie;
-    }
-
-    public Map<String, String> getDeepSeekWebCustomHeaders() {
-        return deepSeekWebCustomHeaders;
-    }
-
-    public void setDeepSeekWebCustomHeaders(Map<String, String> deepSeekWebCustomHeaders) {
-        this.deepSeekWebCustomHeaders = deepSeekWebCustomHeaders;
-    }
-
-    // Backward compatibility helper
-    public String getDeepSeekWebUserToken() {
-        return deepSeekWebAuthToken;
-    }
-
-    public void setDeepSeekWebUserToken(String token) {
-        this.deepSeekWebAuthToken = token;
     }
 
     public String getCustomApiUrl() {
