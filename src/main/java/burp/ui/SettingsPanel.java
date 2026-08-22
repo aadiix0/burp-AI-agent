@@ -19,29 +19,23 @@ public class SettingsPanel extends JPanel {
 
     private JCheckBox enableOpenCodeZenCheckBox;
     private JTextField openCodeZenKeyField;
-    private JTextField openCodeZenUrlField;
     private JCheckBox openCodeZenFreeOnlyCheckBox;
 
     private JCheckBox enableAiHubMixCheckBox;
     private JTextField aiHubMixKeyField;
-    private JTextField aiHubMixUrlField;
 
     private JCheckBox enableOpenRouterCheckBox;
     private JTextField openRouterKeyField;
-    private JTextField openRouterUrlField;
 
     private JCheckBox enableGoogleCheckBox;
     private JTextField googleKeyField;
-    private JTextField googleUrlField;
     private JCheckBox googleFreeOnlyCheckBox;
 
     private JCheckBox enableCerebrasCheckBox;
     private JTextField cerebrasKeyField;
-    private JTextField cerebrasUrlField;
 
     private JCheckBox enableGroqCheckBox;
     private JTextField groqKeyField;
-    private JTextField groqUrlField;
     private JCheckBox groqFreeOnlyCheckBox;
 
     private JCheckBox enableCloudflareCheckBox;
@@ -83,29 +77,23 @@ public class SettingsPanel extends JPanel {
 
         enableOpenCodeZenCheckBox = new JCheckBox("Enable OpenCode Zen");
         openCodeZenKeyField = new JTextField(30);
-        openCodeZenUrlField = new JTextField(30);
         openCodeZenFreeOnlyCheckBox = new JCheckBox("Show Only Free Models for OpenCode Zen");
 
         enableAiHubMixCheckBox = new JCheckBox("Enable AIHubMix");
         aiHubMixKeyField = new JTextField(30);
-        aiHubMixUrlField = new JTextField(30);
 
         enableOpenRouterCheckBox = new JCheckBox("Enable OpenRouter");
         openRouterKeyField = new JTextField(30);
-        openRouterUrlField = new JTextField(30);
 
         enableGoogleCheckBox = new JCheckBox("Enable Google AI Studio (Gemini)");
         googleKeyField = new JTextField(30);
-        googleUrlField = new JTextField(30);
         googleFreeOnlyCheckBox = new JCheckBox("Show Only Free Tier Models for Google AI Studio");
 
         enableCerebrasCheckBox = new JCheckBox("Enable Cerebras");
         cerebrasKeyField = new JTextField(30);
-        cerebrasUrlField = new JTextField(30);
 
         enableGroqCheckBox = new JCheckBox("Enable Groq");
         groqKeyField = new JTextField(30);
-        groqUrlField = new JTextField(30);
         groqFreeOnlyCheckBox = new JCheckBox("Show Only Free Models for Groq");
 
         enableCloudflareCheckBox = new JCheckBox("Enable Cloudflare Workers AI");
@@ -122,29 +110,23 @@ public class SettingsPanel extends JPanel {
 
         row = addProviderHeader(keysPanel, gbc, row, enableOpenCodeZenCheckBox);
         row = addGridRow(keysPanel, gbc, row, "OpenCode Zen API Key:", openCodeZenKeyField);
-        row = addGridRow(keysPanel, gbc, row, "OpenCode Zen Base URL:", openCodeZenUrlField);
         row = addCheckboxRow(keysPanel, gbc, row, openCodeZenFreeOnlyCheckBox);
 
         row = addProviderHeader(keysPanel, gbc, row, enableAiHubMixCheckBox);
         row = addGridRow(keysPanel, gbc, row, "AIHubMix API Key:", aiHubMixKeyField);
-        row = addGridRow(keysPanel, gbc, row, "AIHubMix Base URL:", aiHubMixUrlField);
 
         row = addProviderHeader(keysPanel, gbc, row, enableOpenRouterCheckBox);
         row = addGridRow(keysPanel, gbc, row, "OpenRouter API Key:", openRouterKeyField);
-        row = addGridRow(keysPanel, gbc, row, "OpenRouter Base URL:", openRouterUrlField);
 
         row = addProviderHeader(keysPanel, gbc, row, enableGoogleCheckBox);
         row = addGridRow(keysPanel, gbc, row, "Google AI API Key:", googleKeyField);
-        row = addGridRow(keysPanel, gbc, row, "Google AI Base URL:", googleUrlField);
         row = addCheckboxRow(keysPanel, gbc, row, googleFreeOnlyCheckBox);
 
         row = addProviderHeader(keysPanel, gbc, row, enableCerebrasCheckBox);
         row = addGridRow(keysPanel, gbc, row, "Cerebras API Key:", cerebrasKeyField);
-        row = addGridRow(keysPanel, gbc, row, "Cerebras Base URL:", cerebrasUrlField);
 
         row = addProviderHeader(keysPanel, gbc, row, enableGroqCheckBox);
         row = addGridRow(keysPanel, gbc, row, "Groq API Key:", groqKeyField);
-        row = addGridRow(keysPanel, gbc, row, "Groq Base URL:", groqUrlField);
         row = addCheckboxRow(keysPanel, gbc, row, groqFreeOnlyCheckBox);
 
         row = addProviderHeader(keysPanel, gbc, row, enableCloudflareCheckBox);
@@ -237,29 +219,23 @@ public class SettingsPanel extends JPanel {
 
         enableOpenCodeZenCheckBox.setSelected(config.isEnableOpenCodeZen());
         openCodeZenKeyField.setText(config.getOpenCodeZenApiKey());
-        openCodeZenUrlField.setText(config.getOpenCodeZenBaseUrl());
         openCodeZenFreeOnlyCheckBox.setSelected(config.isOpenCodeZenFreeOnly());
 
         enableAiHubMixCheckBox.setSelected(config.isEnableAiHubMix());
         aiHubMixKeyField.setText(config.getAiHubMixApiKey());
-        aiHubMixUrlField.setText(config.getAiHubMixBaseUrl());
 
         enableOpenRouterCheckBox.setSelected(config.isEnableOpenRouter());
         openRouterKeyField.setText(config.getOpenRouterApiKey());
-        openRouterUrlField.setText(config.getOpenRouterBaseUrl());
 
         enableGoogleCheckBox.setSelected(config.isEnableGoogleAiStudio());
         googleKeyField.setText(config.getGoogleApiKey());
-        googleUrlField.setText(config.getGoogleBaseUrl());
         googleFreeOnlyCheckBox.setSelected(config.isGoogleFreeOnly());
 
         enableCerebrasCheckBox.setSelected(config.isEnableCerebras());
         cerebrasKeyField.setText(config.getCerebrasApiKey());
-        cerebrasUrlField.setText(config.getCerebrasBaseUrl());
 
         enableGroqCheckBox.setSelected(config.isEnableGroq());
         groqKeyField.setText(config.getGroqApiKey());
-        groqUrlField.setText(config.getGroqBaseUrl());
         groqFreeOnlyCheckBox.setSelected(config.isGroqFreeOnly());
 
         enableCloudflareCheckBox.setSelected(config.isEnableCloudflare());
@@ -282,29 +258,23 @@ public class SettingsPanel extends JPanel {
 
         config.setEnableOpenCodeZen(enableOpenCodeZenCheckBox.isSelected());
         config.setOpenCodeZenApiKey(openCodeZenKeyField.getText().trim());
-        config.setOpenCodeZenBaseUrl(openCodeZenUrlField.getText().trim());
         config.setOpenCodeZenFreeOnly(openCodeZenFreeOnlyCheckBox.isSelected());
 
         config.setEnableAiHubMix(enableAiHubMixCheckBox.isSelected());
         config.setAiHubMixApiKey(aiHubMixKeyField.getText().trim());
-        config.setAiHubMixBaseUrl(aiHubMixUrlField.getText().trim());
 
         config.setEnableOpenRouter(enableOpenRouterCheckBox.isSelected());
         config.setOpenRouterApiKey(openRouterKeyField.getText().trim());
-        config.setOpenRouterBaseUrl(openRouterUrlField.getText().trim());
 
         config.setEnableGoogleAiStudio(enableGoogleCheckBox.isSelected());
         config.setGoogleApiKey(googleKeyField.getText().trim());
-        config.setGoogleBaseUrl(googleUrlField.getText().trim());
         config.setGoogleFreeOnly(googleFreeOnlyCheckBox.isSelected());
 
         config.setEnableCerebras(enableCerebrasCheckBox.isSelected());
         config.setCerebrasApiKey(cerebrasKeyField.getText().trim());
-        config.setCerebrasBaseUrl(cerebrasUrlField.getText().trim());
 
         config.setEnableGroq(enableGroqCheckBox.isSelected());
         config.setGroqApiKey(groqKeyField.getText().trim());
-        config.setGroqBaseUrl(groqUrlField.getText().trim());
         config.setGroqFreeOnly(groqFreeOnlyCheckBox.isSelected());
 
         config.setEnableCloudflare(enableCloudflareCheckBox.isSelected());
