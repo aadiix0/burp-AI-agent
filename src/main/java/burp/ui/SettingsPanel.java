@@ -46,7 +46,6 @@ public class SettingsPanel extends JPanel {
     private JTextField customUrlField;
     private JTextField customKeyField;
 
-    private JCheckBox enableInspectorCheckBox;
     private JTextArea systemPromptArea;
 
     public SettingsPanel(MontoyaApi api, StorageManager storageManager, Runnable onConfigUpdated) {
@@ -138,16 +137,7 @@ public class SettingsPanel extends JPanel {
         row = addGridRow(keysPanel, gbc, row, "Custom API Key:", customKeyField);
 
         formPanel.add(keysPanel);
-        formPanel.add(Box.createVerticalStrut(15));
-
-        // Display Options
-        JPanel displayPanel = createSectionPanel("Burp Suite UI Options");
-        displayPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-        enableInspectorCheckBox = new JCheckBox("Show AI Inspector Tab in Repeater / Proxy Message Editors");
-        displayPanel.add(enableInspectorCheckBox);
-
-        formPanel.add(displayPanel);
-        formPanel.add(Box.createVerticalStrut(15));
+        formPanel.add(Box.createVerticalStrut(10));
 
         // Custom System Prompt
         JPanel promptPanel = createSectionPanel("Global System Prompt");
@@ -246,7 +236,6 @@ public class SettingsPanel extends JPanel {
         customUrlField.setText(config.getCustomApiUrl());
         customKeyField.setText(config.getCustomApiKey());
 
-        enableInspectorCheckBox.setSelected(config.isEnableInspectorTab());
         systemPromptArea.setText(config.getSystemPrompt());
     }
 
@@ -285,7 +274,6 @@ public class SettingsPanel extends JPanel {
         config.setCustomApiUrl(customUrlField.getText().trim());
         config.setCustomApiKey(customKeyField.getText().trim());
 
-        config.setEnableInspectorTab(enableInspectorCheckBox.isSelected());
         config.setSystemPrompt(systemPromptArea.getText().trim());
 
         storageManager.saveConfig(config);
