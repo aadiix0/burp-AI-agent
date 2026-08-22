@@ -104,37 +104,21 @@ public class SettingsPanel extends JPanel {
         customKeyField = new JTextField(30);
 
         int row = 0;
-        row = addProviderHeader(keysPanel, gbc, row, enableNvidiaCheckBox);
-        row = addGridRow(keysPanel, gbc, row, "NVIDIA API Key:", nvidiaKeyField);
+        row = addCompactProviderRow(keysPanel, gbc, row, enableNvidiaCheckBox, "API Key:", nvidiaKeyField, null);
+        row = addCompactProviderRow(keysPanel, gbc, row, enableOpenCodeZenCheckBox, "API Key:", openCodeZenKeyField, openCodeZenFreeOnlyCheckBox);
+        row = addCompactProviderRow(keysPanel, gbc, row, enableAiHubMixCheckBox, "API Key:", aiHubMixKeyField, null);
+        row = addCompactProviderRow(keysPanel, gbc, row, enableOpenRouterCheckBox, "API Key:", openRouterKeyField, null);
+        row = addCompactProviderRow(keysPanel, gbc, row, enableGoogleCheckBox, "API Key:", googleKeyField, googleFreeOnlyCheckBox);
+        row = addCompactProviderRow(keysPanel, gbc, row, enableCerebrasCheckBox, "API Key:", cerebrasKeyField, null);
+        row = addCompactProviderRow(keysPanel, gbc, row, enableGroqCheckBox, "API Key:", groqKeyField, groqFreeOnlyCheckBox);
 
-        row = addProviderHeader(keysPanel, gbc, row, enableOpenCodeZenCheckBox);
-        row = addGridRow(keysPanel, gbc, row, "OpenCode Zen API Key:", openCodeZenKeyField);
-        row = addCheckboxRow(keysPanel, gbc, row, openCodeZenFreeOnlyCheckBox);
+        // Cloudflare (Key + Account ID)
+        row = addCompactProviderRow(keysPanel, gbc, row, enableCloudflareCheckBox, "Token:", cloudflareKeyField, null);
+        row = addGridRow(keysPanel, gbc, row, "Account ID:", cloudflareAccountIdField);
 
-        row = addProviderHeader(keysPanel, gbc, row, enableAiHubMixCheckBox);
-        row = addGridRow(keysPanel, gbc, row, "AIHubMix API Key:", aiHubMixKeyField);
-
-        row = addProviderHeader(keysPanel, gbc, row, enableOpenRouterCheckBox);
-        row = addGridRow(keysPanel, gbc, row, "OpenRouter API Key:", openRouterKeyField);
-
-        row = addProviderHeader(keysPanel, gbc, row, enableGoogleCheckBox);
-        row = addGridRow(keysPanel, gbc, row, "Google AI API Key:", googleKeyField);
-        row = addCheckboxRow(keysPanel, gbc, row, googleFreeOnlyCheckBox);
-
-        row = addProviderHeader(keysPanel, gbc, row, enableCerebrasCheckBox);
-        row = addGridRow(keysPanel, gbc, row, "Cerebras API Key:", cerebrasKeyField);
-
-        row = addProviderHeader(keysPanel, gbc, row, enableGroqCheckBox);
-        row = addGridRow(keysPanel, gbc, row, "Groq API Key:", groqKeyField);
-        row = addCheckboxRow(keysPanel, gbc, row, groqFreeOnlyCheckBox);
-
-        row = addProviderHeader(keysPanel, gbc, row, enableCloudflareCheckBox);
-        row = addGridRow(keysPanel, gbc, row, "Cloudflare API Token:", cloudflareKeyField);
-        row = addGridRow(keysPanel, gbc, row, "Cloudflare Account ID:", cloudflareAccountIdField);
-
-        row = addProviderHeader(keysPanel, gbc, row, enableCustomCheckBox);
-        row = addGridRow(keysPanel, gbc, row, "Custom API Base URL:", customUrlField);
-        row = addGridRow(keysPanel, gbc, row, "Custom API Key:", customKeyField);
+        // Custom (URL + Key)
+        row = addCompactProviderRow(keysPanel, gbc, row, enableCustomCheckBox, "Base URL:", customUrlField, null);
+        row = addGridRow(keysPanel, gbc, row, "API Key:", customKeyField);
 
         formPanel.add(keysPanel);
         formPanel.add(Box.createVerticalStrut(10));
@@ -159,6 +143,7 @@ public class SettingsPanel extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(formPanel);
         scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(24);
 
         add(scrollPane, BorderLayout.CENTER);
         add(btnPanel, BorderLayout.SOUTH);
@@ -170,14 +155,32 @@ public class SettingsPanel extends JPanel {
         return panel;
     }
 
-    private int addProviderHeader(JPanel panel, GridBagConstraints gbc, int row, JCheckBox enableBox) {
+    private int addCompactProviderRow(JPanel panel, GridBagConstraints gbc, int row, JCheckBox enableBox, String labelText, JTextField keyField, JCheckBox freeOnlyBox) {
         enableBox.setFont(enableBox.getFont().deriveFont(Font.BOLD));
+
         gbc.gridx = 0;
         gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1.0;
-        panel.add(enableBox, gbc);
+        gbc.weightx = 0.0;
         gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
+        panel.add(enableBox, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        rightPanel.add(new JLabel(labelText));
+
+        keyField.setPreferredSize(new Dimension(380, 26));
+        rightPanel.add(keyField);
+
+        if (freeOnlyBox != null) {
+            rightPanel.add(freeOnlyBox);
+        }
+
+        panel.add(rightPanel, gbc);
         return row + 1;
     }
 
@@ -185,28 +188,24 @@ public class SettingsPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = row;
         gbc.weightx = 0.0;
+        gbc.gridwidth = 1;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.WEST;
-        panel.add(new JLabel(labelText), gbc);
+        panel.add(new JLabel(""), gbc); // blank left spacer
 
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.anchor = GridBagConstraints.WEST;
 
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        rightPanel.add(new JLabel(labelText));
+
         if (field instanceof JTextField) {
-            field.setPreferredSize(new Dimension(350, 26));
-            field.setMaximumSize(new Dimension(350, 26));
+            field.setPreferredSize(new Dimension(380, 26));
         }
+        rightPanel.add(field);
 
-        panel.add(field, gbc);
-        return row + 1;
-    }
-
-    private int addCheckboxRow(JPanel panel, GridBagConstraints gbc, int row, JCheckBox checkbox) {
-        gbc.gridx = 1;
-        gbc.gridy = row;
-        gbc.weightx = 1.0;
-        panel.add(checkbox, gbc);
+        panel.add(rightPanel, gbc);
         return row + 1;
     }
 
