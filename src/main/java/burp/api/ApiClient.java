@@ -401,6 +401,7 @@ public class ApiClient {
             body.put("thinking_enabled", thinkingEnabled);
             body.put("search_enabled", expertMode ? false : searchEnabled);
             body.put("mode", expertMode ? "expert" : "instant");
+            body.set("ref_file_ids", objectMapper.createArrayNode());
 
             String promptText = (newPrompt != null && !newPrompt.trim().isEmpty()) ? newPrompt.trim() : "";
             if (promptText.isEmpty() && !history.isEmpty()) {
