@@ -17,7 +17,8 @@ public class SettingsPanel extends JPanel {
     private JTextField nvidiaKeyField;
     private JTextField openCodeZenKeyField;
     private JTextField openCodeZenUrlField;
-    private JTextField deepSeekWebTokenField;
+    private JTextField deepSeekWebAuthTokenField;
+    private JTextField deepSeekWebCookieField;
     private JTextField customUrlField;
     private JTextField customKeyField;
     private JCheckBox enableInspectorCheckBox;
@@ -49,16 +50,26 @@ public class SettingsPanel extends JPanel {
         nvidiaKeyField = new JTextField(30);
         openCodeZenKeyField = new JTextField(30);
         openCodeZenUrlField = new JTextField(30);
-        deepSeekWebTokenField = new JTextField(30);
+        deepSeekWebAuthTokenField = new JTextField(30);
+        deepSeekWebCookieField = new JTextField(30);
         customUrlField = new JTextField(30);
         customKeyField = new JTextField(30);
+
+        JButton parseHeadersBtn = new JButton("📋 Paste & Parse Headers");
+        parseHeadersBtn.setToolTipText("Paste raw HTTP request headers from Burp to automatically extract Auth Token & Cookies");
+        parseHeadersBtn.addActionListener(e -> parseRawHeadersDialog());
 
         addGridRow(keysPanel, gbc, 0, "NVIDIA API Key:", nvidiaKeyField);
         addGridRow(keysPanel, gbc, 1, "OpenCode Zen API Key:", openCodeZenKeyField);
         addGridRow(keysPanel, gbc, 2, "OpenCode Zen Base URL:", openCodeZenUrlField);
-        addGridRow(keysPanel, gbc, 3, "DeepSeek Web User Token / Cookie:", deepSeekWebTokenField);
-        addGridRow(keysPanel, gbc, 4, "Custom API Base URL:", customUrlField);
-        addGridRow(keysPanel, gbc, 5, "Custom API Key:", customKeyField);
+        addGridRow(keysPanel, gbc, 3, "DeepSeek Web Auth Token:", deepSeekWebAuthTokenField);
+        addGridRow(keysPanel, gbc, 4, "DeepSeek Web Cookie:", deepSeekWebCookieField);
+
+        gbc.gridx = 1; gbc.gridy = 5; gbc.weightx = 1.0;
+        keysPanel.add(parseHeadersBtn, gbc);
+
+        addGridRow(keysPanel, gbc, 6, "Custom API Base URL:", customUrlField);
+        addGridRow(keysPanel, gbc, 7, "Custom API Key:", customKeyField);
 
         formPanel.add(keysPanel);
         formPanel.add(Box.createVerticalStrut(15));
@@ -119,11 +130,36 @@ public class SettingsPanel extends JPanel {
         nvidiaKeyField.setText(config.getNvidiaApiKey());
         openCodeZenKeyField.setText(config.getOpenCodeZenApiKey());
         openCodeZenUrlField.setText(config.getOpenCodeZenBaseUrl());
-        deepSeekWebTokenField.setText(config.getDeepSeekWebUserToken());
+        deepSeekWebAuthTokenField.setText(config.getDeepSeekWebAuthToken());
+        deepSeekWebCookieField.setText(config.getDeepSeekWebCookie());
         customUrlField.setText(config.getCustomApiUrl());
         customKeyField.setText(config.getCustomApiKey());
         enableInspectorCheckBox.setSelected(config.isEnableInspectorTab());
         systemPromptArea.setText(config.getSystemPrompt());
+    }
+
+    private void parseRawHeadersDialog() {
+        JTextArea pasteArea = new JTextArea(10, 40);
+        pasteArea.setLineWrap(true);
+        pasteArea.setWrapStyleWord(true);
+        int result = JOptionPane.showConfirmDialog(this, new JScrollPane(pasteArea), "Paste Raw HTTP Request Headers", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            String raw = pasteArea.getText();
+            if (raw != null && !raw.trim().isEmpty()) {
+                String[] lines = raw.split("\r?\n");
+                for (String line : lines) {
+                    String lower = line.toLowerCase().trim();
+                    if (lower.startsWith("authorization:")) {
+                        String authVal = line.substring(line.indexOf(':') + 1).trim();
+                        deepSeekWebAuthTokenField.setText(authVal);
+                    } else if (lower.startsWith("cookie:")) {
+                        String cookieVal = line.substring(line.indexOf(':') + 1).trim();
+                        deepSeekWebCookieField.setText(cookieVal);
+                    }
+                }
+                JOptionPane.showMessageDialog(this, "Parsed headers successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
     }
 
     private void saveSettings() {
@@ -131,7 +167,8 @@ public class SettingsPanel extends JPanel {
         config.setNvidiaApiKey(nvidiaKeyField.getText().trim());
         config.setOpenCodeZenApiKey(openCodeZenKeyField.getText().trim());
         config.setOpenCodeZenBaseUrl(openCodeZenUrlField.getText().trim());
-        config.setDeepSeekWebUserToken(deepSeekWebTokenField.getText().trim());
+        config.setDeepSeekWebAuthToken(deepSeekWebAuthTokenField.getText().trim());
+        config.setDeepSeekWebCookie(deepSeekWebCookieField.getText().trim());
         config.setCustomApiUrl(customUrlField.getText().trim());
         config.setCustomApiKey(customKeyField.getText().trim());
         config.setEnableInspectorTab(enableInspectorCheckBox.isSelected());

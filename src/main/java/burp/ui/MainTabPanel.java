@@ -638,7 +638,9 @@ public class MainTabPanel extends JPanel {
         String endpointUrl;
 
         if (ApiClient.PROVIDER_DEEPSEEK_WEB.equalsIgnoreCase(provider)) {
-            apiKey = config.getDeepSeekWebUserToken();
+            apiKey = config.getDeepSeekWebAuthToken() != null && !config.getDeepSeekWebAuthToken().isEmpty()
+                    ? config.getDeepSeekWebAuthToken()
+                    : config.getDeepSeekWebCookie();
             endpointUrl = "https://chat.deepseek.com";
         } else if (ApiClient.PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
             apiKey = config.getOpenCodeZenApiKey();
@@ -777,7 +779,7 @@ public class MainTabPanel extends JPanel {
         boolean search = webSearchToggleBtn.isSelected();
         boolean expert = deepSeekModeToggleBtn.isSelected();
 
-        apiClient.streamChatCompletion(config, selectedModel, activeSession.getMessages(), userPrompt, thinking, search, expert, new ApiClient.StreamCallback() {
+        apiClient.streamChatCompletion(config, selectedModel, activeSession.getMessages().subList(0, activeSession.getMessages().size() - 1), userPrompt, thinking, search, expert, new ApiClient.StreamCallback() {
             @Override
             public void onChunk(String chunk) {
                 fullResponseBuffer.append(chunk);

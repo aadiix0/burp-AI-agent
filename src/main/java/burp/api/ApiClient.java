@@ -263,9 +263,11 @@ public class ApiClient {
             boolean expertMode,
             StreamCallback callback) {
 
-        String token = config.getDeepSeekWebUserToken();
-        if (token == null || token.trim().isEmpty()) {
-            callback.onError(new IllegalArgumentException("DeepSeek Web User Token / Cookie is not set in Settings."));
+        String authToken = config.getDeepSeekWebAuthToken();
+        String cookie = config.getDeepSeekWebCookie();
+
+        if ((authToken == null || authToken.trim().isEmpty()) && (cookie == null || cookie.trim().isEmpty())) {
+            callback.onError(new IllegalArgumentException("DeepSeek Web Authorization Token / Cookie is not set in Settings."));
             return;
         }
 
@@ -275,15 +277,26 @@ public class ApiClient {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
 
-            if (token.contains("=")) {
-                conn.setRequestProperty("Cookie", token.trim());
-            } else {
-                conn.setRequestProperty("Authorization", "Bearer " + token.trim());
+            if (authToken != null && !authToken.trim().isEmpty()) {
+                String cleanAuth = authToken.trim();
+                if (!cleanAuth.toLowerCase().startsWith("bearer ")) {
+                    cleanAuth = "Bearer " + cleanAuth;
+                }
+                conn.setRequestProperty("Authorization", cleanAuth);
+            }
+
+            if (cookie != null && !cookie.trim().isEmpty()) {
+                conn.setRequestProperty("Cookie", cookie.trim());
             }
 
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "text/event-stream");
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0");
+            conn.setRequestProperty("Referer", "https://chat.deepseek.com/");
+            conn.setRequestProperty("x-client-bundle-id", "com.deepseek.chat");
+            conn.setRequestProperty("x-client-platform", "web");
+            conn.setRequestProperty("x-client-version", "2.4.0");
+            conn.setRequestProperty("x-client-locale", "en_US");
             conn.setDoOutput(true);
 
             ObjectNode body = objectMapper.createObjectNode();
