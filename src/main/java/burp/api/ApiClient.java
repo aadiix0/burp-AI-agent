@@ -260,6 +260,8 @@ public class ApiClient {
         URL url = new URL("https://chat.deepseek.com/api/v6/chat/session/create");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
+        conn.setConnectTimeout(8000);
+        conn.setReadTimeout(12000);
         applyDeepSeekWebHeaders(conn, config, authToken, cookie);
         conn.setDoOutput(true);
 
@@ -362,6 +364,8 @@ public class ApiClient {
             URL url = new URL(endpointUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(20000);
             applyDeepSeekWebHeaders(conn, config, authToken, cookie);
             conn.setDoOutput(true);
 

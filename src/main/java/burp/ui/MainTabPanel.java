@@ -788,15 +788,24 @@ public class MainTabPanel extends JPanel {
             public void onChunk(String chunk) {
                 fullResponseBuffer.append(chunk);
                 assistantMsg.setContent(fullResponseBuffer.toString());
-                SwingUtilities.invokeLater(() -> renderActiveSessionChat());
+                SwingUtilities.invokeLater(() -> {
+                    renderActiveSessionChat();
+                    chatDisplayPane.revalidate();
+                    chatDisplayPane.repaint();
+                });
             }
 
             @Override
             public void onError(Throwable throwable) {
                 SwingUtilities.invokeLater(() -> {
-                    assistantMsg.setContent("**Error:** " + throwable.getMessage());
+                    String errContent = fullResponseBuffer.length() > 0
+                            ? fullResponseBuffer.toString() + "\n\n⚠️ **Error:** " + throwable.getMessage()
+                            : "⚠️ **Error:** " + throwable.getMessage();
+                    assistantMsg.setContent(errContent);
                     storageManager.saveSession(activeSession);
                     renderActiveSessionChat();
+                    chatDisplayPane.revalidate();
+                    chatDisplayPane.repaint();
                     sendButton.setEnabled(true);
                 });
             }
@@ -804,8 +813,13 @@ public class MainTabPanel extends JPanel {
             @Override
             public void onComplete() {
                 SwingUtilities.invokeLater(() -> {
+                    if (fullResponseBuffer.length() == 0) {
+                        assistantMsg.setContent("*(No response received from model)*");
+                    }
                     storageManager.saveSession(activeSession);
                     renderActiveSessionChat();
+                    chatDisplayPane.revalidate();
+                    chatDisplayPane.repaint();
                     sendButton.setEnabled(true);
                 });
             }
