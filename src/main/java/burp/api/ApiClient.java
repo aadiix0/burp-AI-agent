@@ -22,6 +22,12 @@ public class ApiClient {
 
     public static final String PROVIDER_NVIDIA = "NVIDIA";
     public static final String PROVIDER_OPENCODE = "OpenCode Zen";
+    public static final String PROVIDER_AIHUBMIX = "AIHubMix";
+    public static final String PROVIDER_OPENROUTER = "OpenRouter";
+    public static final String PROVIDER_GOOGLE = "Google AI Studio";
+    public static final String PROVIDER_CEREBRAS = "Cerebras";
+    public static final String PROVIDER_GROQ = "Groq";
+    public static final String PROVIDER_CLOUDFLARE = "Cloudflare Workers AI";
     public static final String PROVIDER_CUSTOM = "Custom";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -56,14 +62,14 @@ public class ApiClient {
     public List<ModelEntry> fetchAvailableModels(ExtensionConfig config) {
         List<ModelEntry> models = new ArrayList<>();
 
-        if (config.getNvidiaApiKey() != null && !config.getNvidiaApiKey().trim().isEmpty()) {
+        if (config.isEnableNvidia() && config.getNvidiaApiKey() != null && !config.getNvidiaApiKey().trim().isEmpty()) {
             List<String> list = fetchModelsFromEndpoint(NVIDIA_BASE_URL + "/models", config.getNvidiaApiKey());
             for (String m : list) {
                 models.add(new ModelEntry(PROVIDER_NVIDIA, m));
             }
         }
 
-        if (config.getOpenCodeZenApiKey() != null && !config.getOpenCodeZenApiKey().trim().isEmpty()) {
+        if (config.isEnableOpenCodeZen() && config.getOpenCodeZenApiKey() != null && !config.getOpenCodeZenApiKey().trim().isEmpty()) {
             String baseUrl = normalizeEndpointUrl(config.getOpenCodeZenBaseUrl(), "/models");
             List<String> list = fetchModelsFromEndpoint(baseUrl, config.getOpenCodeZenApiKey());
             for (String m : list) {
@@ -73,7 +79,58 @@ public class ApiClient {
             }
         }
 
-        if (config.getCustomApiUrl() != null && !config.getCustomApiUrl().trim().isEmpty()) {
+        if (config.isEnableAiHubMix() && config.getAiHubMixApiKey() != null && !config.getAiHubMixApiKey().trim().isEmpty()) {
+            String baseUrl = normalizeEndpointUrl(config.getAiHubMixBaseUrl(), "/models");
+            List<String> list = fetchModelsFromEndpoint(baseUrl, config.getAiHubMixApiKey());
+            for (String m : list) {
+                models.add(new ModelEntry(PROVIDER_AIHUBMIX, m));
+            }
+        }
+
+        if (config.isEnableOpenRouter() && config.getOpenRouterApiKey() != null && !config.getOpenRouterApiKey().trim().isEmpty()) {
+            String baseUrl = normalizeEndpointUrl(config.getOpenRouterBaseUrl(), "/models");
+            List<String> list = fetchModelsFromEndpoint(baseUrl, config.getOpenRouterApiKey());
+            for (String m : list) {
+                models.add(new ModelEntry(PROVIDER_OPENROUTER, m));
+            }
+        }
+
+        if (config.isEnableGoogleAiStudio() && config.getGoogleApiKey() != null && !config.getGoogleApiKey().trim().isEmpty()) {
+            String baseUrl = normalizeEndpointUrl(config.getGoogleBaseUrl(), "/models");
+            List<String> list = fetchModelsFromEndpoint(baseUrl, config.getGoogleApiKey());
+            for (String m : list) {
+                if (!config.isGoogleFreeOnly() || m.toLowerCase().contains("flash") || m.toLowerCase().contains("free")) {
+                    models.add(new ModelEntry(PROVIDER_GOOGLE, m));
+                }
+            }
+        }
+
+        if (config.isEnableCerebras() && config.getCerebrasApiKey() != null && !config.getCerebrasApiKey().trim().isEmpty()) {
+            String baseUrl = normalizeEndpointUrl(config.getCerebrasBaseUrl(), "/models");
+            List<String> list = fetchModelsFromEndpoint(baseUrl, config.getCerebrasApiKey());
+            for (String m : list) {
+                models.add(new ModelEntry(PROVIDER_CEREBRAS, m));
+            }
+        }
+
+        if (config.isEnableGroq() && config.getGroqApiKey() != null && !config.getGroqApiKey().trim().isEmpty()) {
+            String baseUrl = normalizeEndpointUrl(config.getGroqBaseUrl(), "/models");
+            List<String> list = fetchModelsFromEndpoint(baseUrl, config.getGroqApiKey());
+            for (String m : list) {
+                if (!config.isGroqFreeOnly() || isGroqFreeModel(m)) {
+                    models.add(new ModelEntry(PROVIDER_GROQ, m));
+                }
+            }
+        }
+
+        if (config.isEnableCloudflare() && config.getCloudflareApiKey() != null && !config.getCloudflareApiKey().trim().isEmpty()) {
+            models.add(new ModelEntry(PROVIDER_CLOUDFLARE, "@cf/meta/llama-3.3-70b-instruct-fp8-fast"));
+            models.add(new ModelEntry(PROVIDER_CLOUDFLARE, "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"));
+            models.add(new ModelEntry(PROVIDER_CLOUDFLARE, "@cf/meta/llama-3.1-8b-instruct"));
+            models.add(new ModelEntry(PROVIDER_CLOUDFLARE, "@cf/qwen/qwen1.5-14b-chat"));
+        }
+
+        if (config.isEnableCustom() && config.getCustomApiUrl() != null && !config.getCustomApiUrl().trim().isEmpty()) {
             String baseUrl = config.getCustomApiUrl().replaceAll("/+$", "");
             if (!baseUrl.endsWith("/models")) {
                 baseUrl += "/models";
@@ -84,11 +141,8 @@ public class ApiClient {
             }
         }
 
-        // Ensure default presets are present if none were dynamically fetched or if keys are missing
-        boolean hasNvidia = models.stream().anyMatch(m -> PROVIDER_NVIDIA.equalsIgnoreCase(m.getProvider()));
-        boolean hasOpenCode = models.stream().anyMatch(m -> PROVIDER_OPENCODE.equalsIgnoreCase(m.getProvider()));
-
-        if (!hasNvidia) {
+        // Ensure default presets are present if enabled but none were dynamically fetched
+        if (config.isEnableNvidia() && models.stream().noneMatch(m -> PROVIDER_NVIDIA.equalsIgnoreCase(m.getProvider()))) {
             models.add(new ModelEntry(PROVIDER_NVIDIA, "deepseek-ai/deepseek-v4-flash-0731"));
             models.add(new ModelEntry(PROVIDER_NVIDIA, "deepseek-ai/deepseek-r1"));
             models.add(new ModelEntry(PROVIDER_NVIDIA, "qwen/qwen2.5-72b-instruct"));
@@ -98,7 +152,7 @@ public class ApiClient {
             models.add(new ModelEntry(PROVIDER_NVIDIA, "nvidia/llama-3.1-nemotron-70b-instruct"));
         }
 
-        if (!hasOpenCode) {
+        if (config.isEnableOpenCodeZen() && models.stream().noneMatch(m -> PROVIDER_OPENCODE.equalsIgnoreCase(m.getProvider()))) {
             models.add(new ModelEntry(PROVIDER_OPENCODE, "deepseek-v4-flash-free"));
             models.add(new ModelEntry(PROVIDER_OPENCODE, "mimo-v2.5-free"));
             if (!config.isOpenCodeZenFreeOnly()) {
@@ -109,7 +163,43 @@ public class ApiClient {
             }
         }
 
+        if (config.isEnableAiHubMix() && models.stream().noneMatch(m -> PROVIDER_AIHUBMIX.equalsIgnoreCase(m.getProvider()))) {
+            models.add(new ModelEntry(PROVIDER_AIHUBMIX, "gpt-4o"));
+            models.add(new ModelEntry(PROVIDER_AIHUBMIX, "claude-3-5-sonnet"));
+            models.add(new ModelEntry(PROVIDER_AIHUBMIX, "deepseek-r1"));
+        }
+
+        if (config.isEnableOpenRouter() && models.stream().noneMatch(m -> PROVIDER_OPENROUTER.equalsIgnoreCase(m.getProvider()))) {
+            models.add(new ModelEntry(PROVIDER_OPENROUTER, "google/gemini-2.0-flash-001"));
+            models.add(new ModelEntry(PROVIDER_OPENROUTER, "deepseek/deepseek-r1"));
+            models.add(new ModelEntry(PROVIDER_OPENROUTER, "meta-llama/llama-3.3-70b-instruct"));
+        }
+
+        if (config.isEnableGoogleAiStudio() && models.stream().noneMatch(m -> PROVIDER_GOOGLE.equalsIgnoreCase(m.getProvider()))) {
+            models.add(new ModelEntry(PROVIDER_GOOGLE, "gemini-2.0-flash"));
+            models.add(new ModelEntry(PROVIDER_GOOGLE, "gemini-1.5-flash"));
+            if (!config.isGoogleFreeOnly()) {
+                models.add(new ModelEntry(PROVIDER_GOOGLE, "gemini-1.5-pro"));
+            }
+        }
+
+        if (config.isEnableCerebras() && models.stream().noneMatch(m -> PROVIDER_CEREBRAS.equalsIgnoreCase(m.getProvider()))) {
+            models.add(new ModelEntry(PROVIDER_CEREBRAS, "llama3.3-70b"));
+            models.add(new ModelEntry(PROVIDER_CEREBRAS, "llama3.1-8b"));
+        }
+
+        if (config.isEnableGroq() && models.stream().noneMatch(m -> PROVIDER_GROQ.equalsIgnoreCase(m.getProvider()))) {
+            models.add(new ModelEntry(PROVIDER_GROQ, "llama-3.3-70b-versatile"));
+            models.add(new ModelEntry(PROVIDER_GROQ, "deepseek-r1-distill-llama-70b"));
+            models.add(new ModelEntry(PROVIDER_GROQ, "gemma2-9b-it"));
+        }
+
         return models;
+    }
+
+    private boolean isGroqFreeModel(String modelId) {
+        String lower = modelId.toLowerCase();
+        return lower.contains("versatile") || lower.contains("llama-3") || lower.contains("gemma") || lower.contains("deepseek-r1");
     }
 
     private List<String> fetchModelsFromEndpoint(String endpointUrl, String apiKey) {
@@ -157,6 +247,25 @@ public class ApiClient {
                 if (PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
                     endpointUrl = normalizeEndpointUrl(config.getOpenCodeZenBaseUrl(), "/chat/completions");
                     apiKey = config.getOpenCodeZenApiKey();
+                } else if (PROVIDER_AIHUBMIX.equalsIgnoreCase(provider)) {
+                    endpointUrl = normalizeEndpointUrl(config.getAiHubMixBaseUrl(), "/chat/completions");
+                    apiKey = config.getAiHubMixApiKey();
+                } else if (PROVIDER_OPENROUTER.equalsIgnoreCase(provider)) {
+                    endpointUrl = normalizeEndpointUrl(config.getOpenRouterBaseUrl(), "/chat/completions");
+                    apiKey = config.getOpenRouterApiKey();
+                } else if (PROVIDER_GOOGLE.equalsIgnoreCase(provider)) {
+                    endpointUrl = normalizeEndpointUrl(config.getGoogleBaseUrl(), "/chat/completions");
+                    apiKey = config.getGoogleApiKey();
+                } else if (PROVIDER_CEREBRAS.equalsIgnoreCase(provider)) {
+                    endpointUrl = normalizeEndpointUrl(config.getCerebrasBaseUrl(), "/chat/completions");
+                    apiKey = config.getCerebrasApiKey();
+                } else if (PROVIDER_GROQ.equalsIgnoreCase(provider)) {
+                    endpointUrl = normalizeEndpointUrl(config.getGroqBaseUrl(), "/chat/completions");
+                    apiKey = config.getGroqApiKey();
+                } else if (PROVIDER_CLOUDFLARE.equalsIgnoreCase(provider)) {
+                    String accountId = config.getCloudflareAccountId().trim();
+                    endpointUrl = "https://api.cloudflare.com/client/v4/accounts/" + accountId + "/ai/v1/chat/completions";
+                    apiKey = config.getCloudflareApiKey();
                 } else if (PROVIDER_CUSTOM.equalsIgnoreCase(provider)) {
                     endpointUrl = normalizeEndpointUrl(config.getCustomApiUrl(), "/chat/completions");
                     apiKey = config.getCustomApiKey();
@@ -251,7 +360,10 @@ public class ApiClient {
     }
 
     public static String normalizeEndpointUrl(String rawBaseUrl, String suffix) {
-        if (rawBaseUrl == null || rawBaseUrl.trim().isEmpty() || rawBaseUrl.contains("opencodezen.com")) {
+        if (rawBaseUrl == null || rawBaseUrl.trim().isEmpty()) {
+            return "https://opencode.ai/zen/v1" + suffix;
+        }
+        if (rawBaseUrl.contains("opencodezen.com")) {
             rawBaseUrl = "https://opencode.ai/zen/v1";
         }
         String clean = rawBaseUrl.trim().replaceAll("/+$", "");
@@ -264,7 +376,7 @@ public class ApiClient {
         if (suffix.equals("/models") && clean.endsWith("/chat/completions")) {
             clean = clean.substring(0, clean.length() - "/chat/completions".length());
         }
-        if (!clean.toLowerCase().endsWith("/v1") && !clean.toLowerCase().contains("/v1/")) {
+        if (!clean.toLowerCase().contains("/v1") && !clean.toLowerCase().contains("/v1beta")) {
             clean += "/v1";
         }
         return clean + suffix;

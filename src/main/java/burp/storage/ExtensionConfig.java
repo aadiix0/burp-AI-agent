@@ -6,11 +6,42 @@ import java.util.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ExtensionConfig {
     private String nvidiaApiKey = "";
+    private boolean enableNvidia = true;
+
     private String openCodeZenApiKey = "";
     private String openCodeZenBaseUrl = "https://opencode.ai/zen/v1";
+    private boolean enableOpenCodeZen = true;
     private boolean openCodeZenFreeOnly = true;
+
+    private String aiHubMixApiKey = "";
+    private String aiHubMixBaseUrl = "https://aihubmix.com/v1";
+    private boolean enableAiHubMix = true;
+
+    private String openRouterApiKey = "";
+    private String openRouterBaseUrl = "https://openrouter.ai/api/v1";
+    private boolean enableOpenRouter = true;
+
+    private String googleApiKey = "";
+    private String googleBaseUrl = "https://generativelanguage.googleapis.com/v1beta/openai";
+    private boolean enableGoogleAiStudio = true;
+    private boolean googleFreeOnly = true;
+
+    private String cerebrasApiKey = "";
+    private String cerebrasBaseUrl = "https://api.cerebras.ai/v1";
+    private boolean enableCerebras = true;
+
+    private String groqApiKey = "";
+    private String groqBaseUrl = "https://api.groq.com/openai/v1";
+    private boolean enableGroq = true;
+    private boolean groqFreeOnly = true;
+
+    private String cloudflareApiKey = "";
+    private String cloudflareAccountId = "";
+    private boolean enableCloudflare = true;
+
     private String customApiUrl = "";
     private String customApiKey = "";
+    private boolean enableCustom = true;
     private String selectedModel = "nvidia/llama-3.1-nemotron-70b-instruct";
     private Set<String> favoriteModels = new HashSet<>(Arrays.asList(
             "nvidia/llama-3.1-nemotron-70b-instruct",
@@ -54,29 +85,20 @@ public class ExtensionConfig {
         }
     }
 
-    public String getNvidiaApiKey() {
-        return nvidiaApiKey;
-    }
+    public String getNvidiaApiKey() { return nvidiaApiKey; }
+    public void setNvidiaApiKey(String nvidiaApiKey) { this.nvidiaApiKey = nvidiaApiKey; }
 
-    public void setNvidiaApiKey(String nvidiaApiKey) {
-        this.nvidiaApiKey = nvidiaApiKey;
-    }
+    public boolean isEnableNvidia() { return enableNvidia; }
+    public void setEnableNvidia(boolean enableNvidia) { this.enableNvidia = enableNvidia; }
 
-    public String getOpenCodeZenApiKey() {
-        return openCodeZenApiKey;
-    }
+    public String getOpenCodeZenApiKey() { return openCodeZenApiKey; }
+    public void setOpenCodeZenApiKey(String openCodeZenApiKey) { this.openCodeZenApiKey = openCodeZenApiKey; }
 
-    public void setOpenCodeZenApiKey(String openCodeZenApiKey) {
-        this.openCodeZenApiKey = openCodeZenApiKey;
-    }
+    public boolean isEnableOpenCodeZen() { return enableOpenCodeZen; }
+    public void setEnableOpenCodeZen(boolean enableOpenCodeZen) { this.enableOpenCodeZen = enableOpenCodeZen; }
 
-    public boolean isOpenCodeZenFreeOnly() {
-        return openCodeZenFreeOnly;
-    }
-
-    public void setOpenCodeZenFreeOnly(boolean openCodeZenFreeOnly) {
-        this.openCodeZenFreeOnly = openCodeZenFreeOnly;
-    }
+    public boolean isOpenCodeZenFreeOnly() { return openCodeZenFreeOnly; }
+    public void setOpenCodeZenFreeOnly(boolean openCodeZenFreeOnly) { this.openCodeZenFreeOnly = openCodeZenFreeOnly; }
 
     public String getOpenCodeZenBaseUrl() {
         if (openCodeZenBaseUrl == null || openCodeZenBaseUrl.trim().isEmpty() || openCodeZenBaseUrl.contains("opencodezen.com")) {
@@ -88,6 +110,66 @@ public class ExtensionConfig {
     public void setOpenCodeZenBaseUrl(String openCodeZenBaseUrl) {
         this.openCodeZenBaseUrl = openCodeZenBaseUrl;
     }
+
+    public String getAiHubMixApiKey() { return aiHubMixApiKey; }
+    public void setAiHubMixApiKey(String aiHubMixApiKey) { this.aiHubMixApiKey = aiHubMixApiKey; }
+
+    public String getAiHubMixBaseUrl() { return aiHubMixBaseUrl; }
+    public void setAiHubMixBaseUrl(String aiHubMixBaseUrl) { this.aiHubMixBaseUrl = aiHubMixBaseUrl; }
+
+    public boolean isEnableAiHubMix() { return enableAiHubMix; }
+    public void setEnableAiHubMix(boolean enableAiHubMix) { this.enableAiHubMix = enableAiHubMix; }
+
+    public String getOpenRouterApiKey() { return openRouterApiKey; }
+    public void setOpenRouterApiKey(String openRouterApiKey) { this.openRouterApiKey = openRouterApiKey; }
+
+    public String getOpenRouterBaseUrl() { return openRouterBaseUrl; }
+    public void setOpenRouterBaseUrl(String openRouterBaseUrl) { this.openRouterBaseUrl = openRouterBaseUrl; }
+
+    public boolean isEnableOpenRouter() { return enableOpenRouter; }
+    public void setEnableOpenRouter(boolean enableOpenRouter) { this.enableOpenRouter = enableOpenRouter; }
+
+    public String getGoogleApiKey() { return googleApiKey; }
+    public void setGoogleApiKey(String googleApiKey) { this.googleApiKey = googleApiKey; }
+
+    public String getGoogleBaseUrl() { return googleBaseUrl; }
+    public void setGoogleBaseUrl(String googleBaseUrl) { this.googleBaseUrl = googleBaseUrl; }
+
+    public boolean isEnableGoogleAiStudio() { return enableGoogleAiStudio; }
+    public void setEnableGoogleAiStudio(boolean enableGoogleAiStudio) { this.enableGoogleAiStudio = enableGoogleAiStudio; }
+
+    public boolean isGoogleFreeOnly() { return googleFreeOnly; }
+    public void setGoogleFreeOnly(boolean googleFreeOnly) { this.googleFreeOnly = googleFreeOnly; }
+
+    public String getCerebrasApiKey() { return cerebrasApiKey; }
+    public void setCerebrasApiKey(String cerebrasApiKey) { this.cerebrasApiKey = cerebrasApiKey; }
+
+    public String getCerebrasBaseUrl() { return cerebrasBaseUrl; }
+    public void setCerebrasBaseUrl(String cerebrasBaseUrl) { this.cerebrasBaseUrl = cerebrasBaseUrl; }
+
+    public boolean isEnableCerebras() { return enableCerebras; }
+    public void setEnableCerebras(boolean enableCerebras) { this.enableCerebras = enableCerebras; }
+
+    public String getGroqApiKey() { return groqApiKey; }
+    public void setGroqApiKey(String groqApiKey) { this.groqApiKey = groqApiKey; }
+
+    public String getGroqBaseUrl() { return groqBaseUrl; }
+    public void setGroqBaseUrl(String groqBaseUrl) { this.groqBaseUrl = groqBaseUrl; }
+
+    public boolean isEnableGroq() { return enableGroq; }
+    public void setEnableGroq(boolean enableGroq) { this.enableGroq = enableGroq; }
+
+    public boolean isGroqFreeOnly() { return groqFreeOnly; }
+    public void setGroqFreeOnly(boolean groqFreeOnly) { this.groqFreeOnly = groqFreeOnly; }
+
+    public String getCloudflareApiKey() { return cloudflareApiKey; }
+    public void setCloudflareApiKey(String cloudflareApiKey) { this.cloudflareApiKey = cloudflareApiKey; }
+
+    public String getCloudflareAccountId() { return cloudflareAccountId; }
+    public void setCloudflareAccountId(String cloudflareAccountId) { this.cloudflareAccountId = cloudflareAccountId; }
+
+    public boolean isEnableCloudflare() { return enableCloudflare; }
+    public void setEnableCloudflare(boolean enableCloudflare) { this.enableCloudflare = enableCloudflare; }
 
     public String getCustomApiUrl() {
         return customApiUrl;
@@ -104,6 +186,9 @@ public class ExtensionConfig {
     public void setCustomApiKey(String customApiKey) {
         this.customApiKey = customApiKey;
     }
+
+    public boolean isEnableCustom() { return enableCustom; }
+    public void setEnableCustom(boolean enableCustom) { this.enableCustom = enableCustom; }
 
     public String getSelectedModel() {
         return selectedModel;
