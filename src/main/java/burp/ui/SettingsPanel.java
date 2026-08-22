@@ -146,18 +146,29 @@ public class SettingsPanel extends JPanel {
         if (result == JOptionPane.OK_OPTION) {
             String raw = pasteArea.getText();
             if (raw != null && !raw.trim().isEmpty()) {
+                ExtensionConfig config = storageManager.getConfig();
+                Map<String, String> customHeaders = config.getDeepSeekWebCustomHeaders();
+                customHeaders.clear();
+
                 String[] lines = raw.split("\r?\n");
                 for (String line : lines) {
-                    String lower = line.toLowerCase().trim();
-                    if (lower.startsWith("authorization:")) {
-                        String authVal = line.substring(line.indexOf(':') + 1).trim();
-                        deepSeekWebAuthTokenField.setText(authVal);
-                    } else if (lower.startsWith("cookie:")) {
-                        String cookieVal = line.substring(line.indexOf(':') + 1).trim();
-                        deepSeekWebCookieField.setText(cookieVal);
+                    int colonIdx = line.indexOf(':');
+                    if (colonIdx > 0) {
+                        String name = line.substring(0, colonIdx).trim();
+                        String val = line.substring(colonIdx + 1).trim();
+                        String lowerName = name.toLowerCase();
+
+                        if ("authorization".equals(lowerName)) {
+                            deepSeekWebAuthTokenField.setText(val);
+                        } else if ("cookie".equals(lowerName)) {
+                            deepSeekWebCookieField.setText(val);
+                        } else if (!lowerName.startsWith("content-length") && !lowerName.startsWith("host") && !lowerName.startsWith("sec-")) {
+                            customHeaders.put(name, val);
+                        }
                     }
                 }
-                JOptionPane.showMessageDialog(this, "Parsed headers successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                storageManager.saveConfig(config);
+                JOptionPane.showMessageDialog(this, "Parsed " + customHeaders.size() + " custom headers successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             }
         }
     }

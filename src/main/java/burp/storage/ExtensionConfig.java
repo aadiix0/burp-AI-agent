@@ -10,6 +10,7 @@ public class ExtensionConfig {
     private String openCodeZenBaseUrl = "https://opencode.ai/zen/v1";
     private String deepSeekWebAuthToken = "";
     private String deepSeekWebCookie = "";
+    private Map<String, String> deepSeekWebCustomHeaders = new LinkedHashMap<>();
     private String customApiUrl = "";
     private String customApiKey = "";
     private String selectedModel = "nvidia/llama-3.1-nemotron-70b-instruct";
@@ -96,6 +97,14 @@ public class ExtensionConfig {
 
     public void setDeepSeekWebCookie(String deepSeekWebCookie) {
         this.deepSeekWebCookie = deepSeekWebCookie;
+    }
+
+    public Map<String, String> getDeepSeekWebCustomHeaders() {
+        return deepSeekWebCustomHeaders;
+    }
+
+    public void setDeepSeekWebCustomHeaders(Map<String, String> deepSeekWebCustomHeaders) {
+        this.deepSeekWebCustomHeaders = deepSeekWebCustomHeaders;
     }
 
     // Backward compatibility helper

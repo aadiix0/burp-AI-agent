@@ -256,11 +256,11 @@ public class ApiClient {
         }).start();
     }
 
-    private String createDeepSeekWebSession(String authToken, String cookie) throws Exception {
+    private String createDeepSeekWebSession(ExtensionConfig config, String authToken, String cookie) throws Exception {
         URL url = new URL("https://chat.deepseek.com/api/v6/chat/session/create");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
-        applyDeepSeekWebHeaders(conn, authToken, cookie);
+        applyDeepSeekWebHeaders(conn, config, authToken, cookie);
         conn.setDoOutput(true);
 
         byte[] input = "{}".getBytes(StandardCharsets.UTF_8);
@@ -287,7 +287,7 @@ public class ApiClient {
         return null;
     }
 
-    private void applyDeepSeekWebHeaders(HttpURLConnection conn, String authToken, String cookie) {
+    private void applyDeepSeekWebHeaders(HttpURLConnection conn, ExtensionConfig config, String authToken, String cookie) {
         if (authToken != null && !authToken.trim().isEmpty()) {
             String cleanAuth = authToken.trim();
             if (!cleanAuth.toLowerCase().startsWith("bearer ")) {
@@ -308,6 +308,12 @@ public class ApiClient {
         conn.setRequestProperty("x-client-platform", "web");
         conn.setRequestProperty("x-client-version", "2.4.0");
         conn.setRequestProperty("x-client-locale", "en_US");
+
+        if (config != null && config.getDeepSeekWebCustomHeaders() != null) {
+            for (java.util.Map.Entry<String, String> entry : config.getDeepSeekWebCustomHeaders().entrySet()) {
+                conn.setRequestProperty(entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     private void streamDeepSeekWebCompletion(
@@ -331,7 +337,22 @@ public class ApiClient {
         try {
             String deepSeekSessionId = currentSession != null ? currentSession.getDeepSeekSessionId() : null;
             if (deepSeekSessionId == null || deepSeekSessionId.trim().isEmpty()) {
-                deepSeekSessionId = createDeepSeekWebSession(authToken, cookie);
+                if (config != null && config.getDeepSeekWebCustomHeaders() != null) {
+                    for (java.util.Map.Entry<String, String> entry : config.getDeepSeekWebCustomHeaders().entrySet()) {
+                        if ("referer".equalsIgnoreCase(entry.getKey())) {
+                            String ref = entry.getValue();
+                            if (ref != null && ref.contains("/s/")) {
+                                String extracted = ref.substring(ref.lastIndexOf("/s/") + 3).trim();
+                                if (!extracted.isEmpty()) {
+                                    deepSeekSessionId = extracted;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (deepSeekSessionId == null || deepSeekSessionId.trim().isEmpty()) {
+                    deepSeekSessionId = createDeepSeekWebSession(config, authToken, cookie);
+                }
                 if (currentSession != null && deepSeekSessionId != null) {
                     currentSession.setDeepSeekSessionId(deepSeekSessionId);
                 }
@@ -341,7 +362,7 @@ public class ApiClient {
             URL url = new URL(endpointUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
-            applyDeepSeekWebHeaders(conn, authToken, cookie);
+            applyDeepSeekWebHeaders(conn, config, authToken, cookie);
             conn.setDoOutput(true);
 
             ObjectNode body = objectMapper.createObjectNode();
