@@ -427,28 +427,70 @@ public class ApiClient {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    if (line.startsWith("data: ")) {
-                        String data = line.substring(6).trim();
-                        if ("[DONE]".equalsIgnoreCase(data)) {
-                            break;
+                    String trimmed = line.trim();
+                    if (trimmed.isEmpty()) {
+                        continue;
+                    }
+
+                    String data = trimmed.startsWith("data:") ? trimmed.substring(5).trim() : trimmed;
+                    if ("[DONE]".equalsIgnoreCase(data)) {
+                        break;
+                    }
+
+                    if (data.startsWith("<") || data.contains("<html") || data.contains("<!DOCTYPE")) {
+                        callback.onError(new RuntimeException("Cloudflare / Web protection returned HTML page. Please update Auth Token / Cookies in Settings."));
+                        return;
+                    }
+
+                    try {
+                        JsonNode root = objectMapper.readTree(data);
+
+                        // Check for server-side error responses in JSON
+                        if (root.has("error_msg") && !root.get("error_msg").isNull()) {
+                            callback.onError(new RuntimeException("DeepSeek Server Error: " + root.get("error_msg").asText()));
+                            return;
                         }
-                        try {
-                            if (data.trim().startsWith("<") || data.contains("<html") || data.contains("<!DOCTYPE")) {
-                                callback.onError(new RuntimeException("Cloudflare / Web protection returned HTML page. Please update Auth Token / Cookies in Settings."));
+                        if (root.has("msg") && !root.get("msg").isNull()) {
+                            String msgStr = root.get("msg").asText();
+                            if (!msgStr.equalsIgnoreCase("success") && !msgStr.isEmpty()) {
+                                callback.onError(new RuntimeException("DeepSeek Web Message: " + msgStr));
                                 return;
                             }
-                            JsonNode root = objectMapper.readTree(data);
-                            if (root.has("choices") && root.get("choices").isArray() && root.get("choices").size() > 0) {
-                                JsonNode choice = root.get("choices").get(0);
-                                if (choice.has("delta") && choice.get("delta").has("content")) {
-                                    String chunk = choice.get("delta").get("content").asText();
-                                    callback.onChunk(chunk);
-                                }
-                            } else if (root.has("content")) {
-                                callback.onChunk(root.get("content").asText());
-                            }
-                        } catch (Exception ignored) {
                         }
+
+                        // Extract chunk content from all possible JSON structures
+                        String chunk = null;
+                        if (root.has("choices") && root.get("choices").isArray() && root.get("choices").size() > 0) {
+                            JsonNode choice = root.get("choices").get(0);
+                            if (choice.has("delta")) {
+                                JsonNode delta = choice.get("delta");
+                                if (delta.has("content") && !delta.get("content").isNull()) {
+                                    chunk = delta.get("content").asText();
+                                } else if (delta.has("text") && !delta.get("text").isNull()) {
+                                    chunk = delta.get("text").asText();
+                                }
+                            } else if (choice.has("text") && !choice.get("text").isNull()) {
+                                chunk = choice.get("text").asText();
+                            }
+                        } else if (root.has("content") && !root.get("content").isNull()) {
+                            chunk = root.get("content").asText();
+                        } else if (root.has("text") && !root.get("text").isNull()) {
+                            chunk = root.get("text").asText();
+                        } else if (root.has("response") && !root.get("response").isNull()) {
+                            chunk = root.get("response").asText();
+                        } else if (root.has("data") && root.get("data").isObject()) {
+                            JsonNode dNode = root.get("data");
+                            if (dNode.has("content") && !dNode.get("content").isNull()) {
+                                chunk = dNode.get("content").asText();
+                            } else if (dNode.has("text") && !dNode.get("text").isNull()) {
+                                chunk = dNode.get("text").asText();
+                            }
+                        }
+
+                        if (chunk != null && !chunk.isEmpty()) {
+                            callback.onChunk(chunk);
+                        }
+                    } catch (Exception ignored) {
                     }
                 }
             }
