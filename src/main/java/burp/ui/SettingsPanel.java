@@ -185,10 +185,19 @@ public class SettingsPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = row;
         gbc.weightx = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
         panel.add(new JLabel(labelText), gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 1.0;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        if (field instanceof JTextField) {
+            field.setPreferredSize(new Dimension(350, 26));
+            field.setMaximumSize(new Dimension(350, 26));
+        }
+
         panel.add(field, gbc);
         return row + 1;
     }
