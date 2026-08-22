@@ -10,6 +10,7 @@ public class ChatSession {
     private String title;
     private long createdAt;
     private long updatedAt;
+    private String deepSeekSessionId;
     private List<ChatMessage> messages = new ArrayList<>();
 
     public ChatSession() {
@@ -52,6 +53,14 @@ public class ChatSession {
 
     public void setUpdatedAt(long updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getDeepSeekSessionId() {
+        return deepSeekSessionId;
+    }
+
+    public void setDeepSeekSessionId(String deepSeekSessionId) {
+        this.deepSeekSessionId = deepSeekSessionId;
     }
 
     public List<ChatMessage> getMessages() {

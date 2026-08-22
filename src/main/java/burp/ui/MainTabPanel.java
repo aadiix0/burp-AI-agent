@@ -779,7 +779,11 @@ public class MainTabPanel extends JPanel {
         boolean search = webSearchToggleBtn.isSelected();
         boolean expert = deepSeekModeToggleBtn.isSelected();
 
-        apiClient.streamChatCompletion(config, selectedModel, activeSession.getMessages().subList(0, activeSession.getMessages().size() - 1), userPrompt, thinking, search, expert, new ApiClient.StreamCallback() {
+        List<ChatMessage> historyForApi = activeSession.getMessages().size() > 1
+                ? activeSession.getMessages().subList(0, activeSession.getMessages().size() - 1)
+                : activeSession.getMessages();
+
+        apiClient.streamChatCompletion(config, selectedModel, activeSession, historyForApi, userPrompt, thinking, search, expert, new ApiClient.StreamCallback() {
             @Override
             public void onChunk(String chunk) {
                 fullResponseBuffer.append(chunk);

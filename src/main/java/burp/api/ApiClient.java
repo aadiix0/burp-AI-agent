@@ -142,6 +142,7 @@ public class ApiClient {
     public void streamChatCompletion(
             ExtensionConfig config,
             ModelEntry modelEntry,
+            burp.model.ChatSession currentSession,
             List<ChatMessage> history,
             String newPrompt,
             boolean thinkingEnabled,
@@ -157,7 +158,7 @@ public class ApiClient {
                 String provider = modelEntry != null ? modelEntry.getProvider() : PROVIDER_NVIDIA;
 
                 if (PROVIDER_DEEPSEEK_WEB.equalsIgnoreCase(provider)) {
-                    streamDeepSeekWebCompletion(config, history, thinkingEnabled, searchEnabled, expertMode, callback);
+                    streamDeepSeekWebCompletion(config, currentSession, history, thinkingEnabled, searchEnabled, expertMode, callback);
                     return;
                 } else if (PROVIDER_OPENCODE.equalsIgnoreCase(provider)) {
                     endpointUrl = normalizeEndpointUrl(config.getOpenCodeZenBaseUrl(), "/chat/completions");
@@ -255,8 +256,57 @@ public class ApiClient {
         }).start();
     }
 
+    private String createDeepSeekWebSession(String authToken, String cookie) throws Exception {
+        URL url = new URL("https://chat.deepseek.com/api/v6/chat/session/create");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        applyDeepSeekWebHeaders(conn, authToken, cookie);
+        conn.setDoOutput(true);
+
+        byte[] input = "{}".getBytes(StandardCharsets.UTF_8);
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(input, 0, input.length);
+        }
+
+        if (conn.getResponseCode() == 200) {
+            try (InputStream is = conn.getInputStream()) {
+                JsonNode root = objectMapper.readTree(is);
+                if (root.has("data") && root.get("data").has("biz_data") && root.get("data").get("biz_data").has("chat_session_id")) {
+                    return root.get("data").get("biz_data").get("chat_session_id").asText();
+                } else if (root.has("data") && root.get("data").has("chat_session_id")) {
+                    return root.get("data").get("chat_session_id").asText();
+                }
+            }
+        }
+        return null;
+    }
+
+    private void applyDeepSeekWebHeaders(HttpURLConnection conn, String authToken, String cookie) {
+        if (authToken != null && !authToken.trim().isEmpty()) {
+            String cleanAuth = authToken.trim();
+            if (!cleanAuth.toLowerCase().startsWith("bearer ")) {
+                cleanAuth = "Bearer " + cleanAuth;
+            }
+            conn.setRequestProperty("Authorization", cleanAuth);
+        }
+
+        if (cookie != null && !cookie.trim().isEmpty()) {
+            conn.setRequestProperty("Cookie", cookie.trim());
+        }
+
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Accept", "text/event-stream");
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0");
+        conn.setRequestProperty("Referer", "https://chat.deepseek.com/");
+        conn.setRequestProperty("x-client-bundle-id", "com.deepseek.chat");
+        conn.setRequestProperty("x-client-platform", "web");
+        conn.setRequestProperty("x-client-version", "2.4.0");
+        conn.setRequestProperty("x-client-locale", "en_US");
+    }
+
     private void streamDeepSeekWebCompletion(
             ExtensionConfig config,
+            burp.model.ChatSession currentSession,
             List<ChatMessage> history,
             boolean thinkingEnabled,
             boolean searchEnabled,
@@ -272,38 +322,38 @@ public class ApiClient {
         }
 
         try {
+            String deepSeekSessionId = currentSession != null ? currentSession.getDeepSeekSessionId() : null;
+            if (deepSeekSessionId == null || deepSeekSessionId.trim().isEmpty()) {
+                deepSeekSessionId = createDeepSeekWebSession(authToken, cookie);
+                if (currentSession != null && deepSeekSessionId != null) {
+                    currentSession.setDeepSeekSessionId(deepSeekSessionId);
+                }
+            }
+
             String endpointUrl = "https://chat.deepseek.com/api/v6/chat/completion";
             URL url = new URL(endpointUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
-
-            if (authToken != null && !authToken.trim().isEmpty()) {
-                String cleanAuth = authToken.trim();
-                if (!cleanAuth.toLowerCase().startsWith("bearer ")) {
-                    cleanAuth = "Bearer " + cleanAuth;
-                }
-                conn.setRequestProperty("Authorization", cleanAuth);
-            }
-
-            if (cookie != null && !cookie.trim().isEmpty()) {
-                conn.setRequestProperty("Cookie", cookie.trim());
-            }
-
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "text/event-stream");
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0");
-            conn.setRequestProperty("Referer", "https://chat.deepseek.com/");
-            conn.setRequestProperty("x-client-bundle-id", "com.deepseek.chat");
-            conn.setRequestProperty("x-client-platform", "web");
-            conn.setRequestProperty("x-client-version", "2.4.0");
-            conn.setRequestProperty("x-client-locale", "en_US");
+            applyDeepSeekWebHeaders(conn, authToken, cookie);
             conn.setDoOutput(true);
 
             ObjectNode body = objectMapper.createObjectNode();
             body.put("model", "deepseek-chat");
+            if (deepSeekSessionId != null) {
+                body.put("chat_session_id", deepSeekSessionId);
+            }
             body.put("thinking_enabled", thinkingEnabled);
             body.put("search_enabled", expertMode ? false : searchEnabled);
             body.put("mode", expertMode ? "expert" : "instant");
+
+            String promptText = "";
+            if (!history.isEmpty()) {
+                ChatMessage lastMsg = history.get(history.size() - 1);
+                if (lastMsg.getRole() == ChatMessage.Role.USER) {
+                    promptText = buildFormattedMessageContent(lastMsg);
+                }
+            }
+            body.put("prompt", promptText);
 
             ArrayNode messagesNode = objectMapper.createArrayNode();
             if (config.getSystemPrompt() != null && !config.getSystemPrompt().trim().isEmpty()) {
