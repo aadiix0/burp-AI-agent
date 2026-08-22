@@ -443,6 +443,10 @@ public class ApiClient {
                     }
 
                     try {
+                        if (burp.Extension.getMontoyaApi() != null) {
+                            burp.Extension.getMontoyaApi().logging().logToOutput("[DeepSeek Web SSE] Line: " + data);
+                        }
+
                         JsonNode root = objectMapper.readTree(data);
 
                         // Check for server-side error responses in JSON
@@ -466,6 +470,10 @@ public class ApiClient {
                                 JsonNode delta = choice.get("delta");
                                 if (delta.has("content") && !delta.get("content").isNull()) {
                                     chunk = delta.get("content").asText();
+                                } else if (delta.has("text_content") && !delta.get("text_content").isNull()) {
+                                    chunk = delta.get("text_content").asText();
+                                } else if (delta.has("thinking_content") && !delta.get("thinking_content").isNull()) {
+                                    chunk = delta.get("thinking_content").asText();
                                 } else if (delta.has("text") && !delta.get("text").isNull()) {
                                     chunk = delta.get("text").asText();
                                 }
@@ -474,6 +482,10 @@ public class ApiClient {
                             }
                         } else if (root.has("content") && !root.get("content").isNull()) {
                             chunk = root.get("content").asText();
+                        } else if (root.has("text_content") && !root.get("text_content").isNull()) {
+                            chunk = root.get("text_content").asText();
+                        } else if (root.has("thinking_content") && !root.get("thinking_content").isNull()) {
+                            chunk = root.get("thinking_content").asText();
                         } else if (root.has("text") && !root.get("text").isNull()) {
                             chunk = root.get("text").asText();
                         } else if (root.has("response") && !root.get("response").isNull()) {
@@ -482,6 +494,10 @@ public class ApiClient {
                             JsonNode dNode = root.get("data");
                             if (dNode.has("content") && !dNode.get("content").isNull()) {
                                 chunk = dNode.get("content").asText();
+                            } else if (dNode.has("text_content") && !dNode.get("text_content").isNull()) {
+                                chunk = dNode.get("text_content").asText();
+                            } else if (dNode.has("thinking_content") && !dNode.get("thinking_content").isNull()) {
+                                chunk = dNode.get("thinking_content").asText();
                             } else if (dNode.has("text") && !dNode.get("text").isNull()) {
                                 chunk = dNode.get("text").asText();
                             }

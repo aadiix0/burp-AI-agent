@@ -779,9 +779,9 @@ public class MainTabPanel extends JPanel {
         boolean search = webSearchToggleBtn.isSelected();
         boolean expert = deepSeekModeToggleBtn.isSelected();
 
-        List<ChatMessage> historyForApi = activeSession.getMessages().size() > 1
-                ? activeSession.getMessages().subList(0, activeSession.getMessages().size() - 1)
-                : activeSession.getMessages();
+        List<ChatMessage> historyForApi = activeSession.getMessages().size() > 2
+                ? activeSession.getMessages().subList(0, activeSession.getMessages().size() - 2)
+                : new ArrayList<>();
 
         apiClient.streamChatCompletion(config, selectedModel, activeSession, historyForApi, userPrompt, thinking, search, expert, new ApiClient.StreamCallback() {
             @Override

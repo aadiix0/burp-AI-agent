@@ -8,8 +8,15 @@ import burp.storage.StorageManager;
 import burp.ui.MainTabPanel;
 
 public class Extension implements BurpExtension {
+    private static MontoyaApi montoyaApi;
+
+    public static MontoyaApi getMontoyaApi() {
+        return montoyaApi;
+    }
+
     @Override
     public void initialize(MontoyaApi api) {
+        montoyaApi = api;
         api.extension().setName("Burp AI Assistant Pro");
 
         StorageManager storageManager = new StorageManager(api);
