@@ -313,9 +313,12 @@ public class ApiClient {
 
         if (config != null && config.getDeepSeekWebCustomHeaders() != null) {
             for (java.util.Map.Entry<String, String> entry : config.getDeepSeekWebCustomHeaders().entrySet()) {
-                conn.setRequestProperty(entry.getKey(), entry.getValue());
+                if (!"accept-encoding".equalsIgnoreCase(entry.getKey())) {
+                    conn.setRequestProperty(entry.getKey(), entry.getValue());
+                }
             }
         }
+        conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
     }
 
     private void streamDeepSeekWebCompletion(
@@ -424,7 +427,13 @@ public class ApiClient {
                 return;
             }
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+            InputStream is = conn.getInputStream();
+            String encoding = conn.getContentEncoding();
+            if (encoding != null && encoding.toLowerCase().contains("gzip")) {
+                is = new java.util.zip.GZIPInputStream(is);
+            }
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     String trimmed = line.trim();

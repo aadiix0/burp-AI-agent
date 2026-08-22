@@ -162,7 +162,7 @@ public class SettingsPanel extends JPanel {
                             deepSeekWebAuthTokenField.setText(val);
                         } else if ("cookie".equals(lowerName)) {
                             deepSeekWebCookieField.setText(val);
-                        } else if (!lowerName.startsWith("content-length") && !lowerName.startsWith("host") && !lowerName.startsWith("sec-")) {
+                        } else if (!lowerName.startsWith("content-length") && !lowerName.startsWith("host") && !lowerName.startsWith("sec-") && !lowerName.startsWith("accept-encoding")) {
                             customHeaders.put(name, val);
                         }
                     }
